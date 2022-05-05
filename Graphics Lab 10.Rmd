@@ -1,0 +1,316 @@
+---
+title: "Graphics week 10 lab"
+author: "Stefany Coxe"
+date: "10/31/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("Stat2Data")
+#install.packages("gapminder")
+#install.packages("jtools")
+#install.packages("ggrepel")
+#install.packages("ggthemes")
+#install.packages("broom")
+# Install devtools package if necessary
+#if(!"devtools" %in% rownames(installed.packages())) install.packages("devtools")
+# Install the stable development verions from GitHub
+#devtools::install_github("crsh/papaja")
+# Install the latest development snapshot from GitHub
+#devtools::install_github("crsh/papaja@devel")
+#install.packages("kableExtra")
+#install.packages("bookdown")
+#install.packages("xtable")
+#install.package("knitr")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(gapminder)
+library(jtools)
+library(ggrepel)
+library(ggthemes)
+library(broom)
+library(papaja)
+library(kableExtra)
+library(bookdown)
+library(xtable)
+library(knitr)
+```
+
+# Adding a specific equation to a plot
+
+We have used `geom_smooth` before to create a general line
+
+- `method = lm` for a straight line
+
+- `method = loess` for a weighted average smooth line
+
+What if you have a more specific equation?
+
+- This example will use a model-based equation
+
+- But you can also specify a certain (e.g., theoretical) equation
+
+## geom_smooth option: add a specific equation to plot
+
+Remember that we had a not-quite-linear relationship between HS GPA and college GPA
+
+```{r}
+data(FirstYearGPA)
+scatter <- ggplot(data = FirstYearGPA, 
+                      aes(x = HSGPA, y = GPA)) +
+  geom_point()
+
+scatter + geom_smooth(method = loess, se = FALSE)
+```
+
+
+## Step 1. Run the model
+
+```{r}
+cubic_model <- lm(GPA ~ HSGPA + I(HSGPA^2) + I(HSGPA^3), 
+                  data = FirstYearGPA)
+cubic_model
+```
+
+## Step 2. Tidy the model
+
+```{r}
+cubic_tidy <- tidy(cubic_model)
+
+print(cubic_tidy)
+
+```
+
+## Step 3 - version 1. Use formula in geom_smooth 
+
+```{r}
+cubic_plot1 <- scatter +
+  geom_point() +
+  geom_smooth(method = lm, 
+              formula = y ~ x + I(x^2) + I(x^3), 
+              se = FALSE)
+
+cubic_plot1
+```
+
+## Step 3 - version 2. Use model values in geom_smooth 
+
+```{r}
+cubic_plot2 <- scatter +
+  geom_point() +
+  geom_smooth(method = nls, 
+formula = y ~ intercept + linear*x + 
+                quadratic*x*x + cubic*x*x*x, 
+se = FALSE,
+method.args = list(start = 
+c(intercept = cubic_tidy$estimate[1], 
+linear = cubic_tidy$estimate[2], 
+quadratic = cubic_tidy$estimate[3], 
+cubic = cubic_tidy$estimate[4]))) 
+
+cubic_plot2
+```
+
+# Two lines with a legend
+
+This is a bit of a cheat to get this to work
+
+You take advantage of the fact that 
+
+- Color arguments generally go *outside* of `aes()` in a geom_smooth
+
+- But if you put the color argument *inside* `aes()`, it treats that as a **label** instead of a color assignment
+
+```{r}
+model_colors <- RColorBrewer::brewer.pal(3, "Set1")
+cubic_plot3 <- scatter + geom_point() +
+  geom_smooth(method = nls, se = FALSE,
+formula = y ~ intercept + linear*x + 
+  quadratic*x*x + cubic*x*x*x, 
+method.args = list(start = 
+c(intercept = cubic_tidy$estimate[1], 
+linear = cubic_tidy$estimate[2], 
+quadratic = cubic_tidy$estimate[3], 
+cubic = cubic_tidy$estimate[4])),
+aes(color = "Cubic", fill = "Cubic")) +
+  geom_smooth(method = lm, aes(color = "Linear", 
+                               fill = "Linear"), 
+              se = FALSE) +
+  scale_color_manual(name = "Models", 
+                     values = model_colors) +
+  scale_fill_manual(name = "Models", 
+                    values = model_colors)
+
+cubic_plot3
+```
+
+# Confidence intervals based on your model
+
+Calculate the confidence intervals based on your model with the `predict` function using the optional argument `interval = predict`
+
+
+```{r}
+gpa_cubic_predictions <- predict(object = cubic_model, 
+                                 newdata = FirstYearGPA, 
+                                 interval = "predict")
+head(gpa_cubic_predictions)
+gpa_cubic_predict <- cbind(FirstYearGPA, 
+                           gpa_cubic_predictions)
+```
+
+New variables produced here:
+
+- `fit`: predicted value
+
+- `lwr`: lower CI limit
+
+- `upr`: upper CI limit
+
+```{r}
+cubic_plot4 <- scatter + geom_point() +
+  geom_line(data = gpa_cubic_predict, 
+            aes(x = HSGPA, y = fit)) +
+  geom_ribbon(data = gpa_cubic_predict, 
+              aes(ymin = lwr, ymax = upr), 
+              alpha = .2)
+
+cubic_plot4
+```
+
+# nest() and group_by()
+
+We have already used `group_by()` to perform an operation across several groups
+
+- e.g., calculate the mean GDP per capita *for each country*
+
+- One value of mean GDP per capita for each country
+
+The `nest()` function goes one step further and actually splits the dataset up into chunks for each group
+
+- You end up with a **nested table**
+
+- You can run separate analyses and get *separate results* 
+
+```{r}
+GPA_nest_genderrace <- FirstYearGPA %>%
+  group_by(Male, White) %>%
+  nest()
+
+GPA_nest_genderrace
+```
+
+## A quick diversion: writing a function
+
+We **use** functions all the time when using R
+
+- `lm()` is a function, `ggplot()` is a function, etc.
+
+We can also **write** functions to do things
+
+- Useful when you'd have to write the same code over and over
+
+- Just call the function instead
+
+```{r}
+lm_fxn <- function(dataframe){
+
+lm(GPA ~ HSGPA, data = dataframe)
+
+}
+```
+
+This function has one argument, `dataframe`
+
+The function uses the specified dataset to run the regression of HSGPA predicing GPA
+
+
+## Back to using nest() and group_by()
+
+The `map()` function applies a function to a set of objects
+
+`data` is the name of the column in our nested dataframe that contains the actual data
+
+`lm_fxn` is the function we just created
+
+- This will run the regression specified in `lm_fxn` to each of the nested dataframes in the nested dataset
+
+- We will have 4 separate outputs, one for each group
+
+```{r}
+grouped_lm <- GPA_nest_genderrace %>%
+  mutate(model = map(data, lm_fxn))
+
+```
+
+Here is the nested dataframe
+
+```{r}
+grouped_lm
+```
+
+- One column contains the data for each group
+
+- One column contains the regression model for each group
+
+
+We can apply the `tidy()` function to the nested dataframe
+
+- Again, using the `map()` function
+
+```{r}
+tidy_grouped_lm <- grouped_lm %>% 
+  mutate(tidied = map(model, tidy))
+tidy_grouped_lm
+```
+
+Then we can `unnest()` the dataframe to see values
+
+```{r}
+out_tidy <- tidy_grouped_lm %>%
+  unnest(tidied)
+out_tidy
+```
+
+## Then filter the dataset
+
+The dataframe includes all the coefficients 
+
+- Here, just intercept and slope
+
+- But say that we really only want to look at slope
+
+```{r}
+slopes_only <- out_tidy %>%
+  filter(term == "HSGPA")
+slopes_only
+```
+
+## Then make a plot of the values
+
+```{r}
+est_grouped <- ggplot(data = slopes_only,
+            mapping = aes(x = as.factor(Male), y = estimate,
+                          ymin = estimate - 2*std.error,
+                          ymax = estimate + 2*std.error,
+                          group = as.factor(White), color = as.factor(White))) +
+  geom_errorbar(position = position_dodge(width = 1)) +
+  labs(x = "Gender", y = "Estimate", color = "Race")
+```
+
+## Then make a plot of the values
+
+```{r}
+est_grouped 
+```
+
+You could instead do something like use both the intercepts and the slopes to plot simple slopes
+
+- The values are all there, you can do with them what you want
+

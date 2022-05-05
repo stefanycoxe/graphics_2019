@@ -1,0 +1,829 @@
+---
+title: "Graphics week 4 lab"
+author: "Stefany Coxe"
+date: "9/19/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=TRUE}
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("Stat2Data")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+set.seed(31415)
+```
+
+# Data
+
+The data comes from a package called "Stat2Data" (note the capitalization) that accompanies the textbook "Stat2: Building Models for a World of Data" by Ann Cannon. Details about the package (which is just a bunch of datasets) can be found here: [https://www.rdocumentation.org/packages/Stat2Data/versions/2.0.0](https://www.rdocumentation.org/packages/Stat2Data/versions/2.0.0)
+
+This dataset includes several continuous and categorical variables related to GPA in the first year of college. Let's take a look.
+
+```{r glimpse_data}
+data("FirstYearGPA")
+
+glimpse(FirstYearGPA)
+```
+
+This dataset is not as well documented and named as some of the other datasets we've worked with. You can get more details about the specific variables from the package page for that dataset: [https://www.rdocumentation.org/packages/Stat2Data/versions/2.0.0/topics/FirstYearGPA](https://www.rdocumentation.org/packages/Stat2Data/versions/2.0.0/topics/FirstYearGPA)
+
+# Geom functions
+
+Let's look at the distribution of 1st year GPA values. This is a continuous variable.
+
+## Geoms for 1 variable
+
+Distribution of a single variable. These are all variants on histograms, density plots, etc.
+
+- Area plot
+
+```{r areaplot}
+GPA_area <- ggplot(data = FirstYearGPA, aes(GPA)) + 
+  geom_area(stat = "bin", binwidth = 0.1)
+
+GPA_area
+```
+
+Note that I changed the bin width to be 0.1. The value you use for the bin width depends on the data -- 0.1 points on a GPA scale gives you information about the general shape without bogging you down with too much detail. (No one cares about GPA differences of less than 0.1 unless they're trying to get on the Honor Roll...)
+
+- Density plot
+
+```{r densityplot}
+GPA_density <- ggplot(data = FirstYearGPA, aes(GPA)) +
+  geom_density(kernel = "gaussian")
+
+GPA_density
+```
+
+The option "kernel = "gaussian"" uses a normal (Gaussian) distribution to smooth. There is a rolling "window" in which the average is calculated; points in each window are weighted according to a normal distribution -- points in the middle of the window contribute more to the mean than points near the edges of the window. There are other options.
+
+- Dot plot
+
+```{r dotplot}
+GPA_dot <- ggplot(data = FirstYearGPA, aes(GPA)) +
+  geom_dotplot()
+
+GPA_dot
+```
+
+It doesn't happen here, but the dot plot often cuts off vertically. This is a known issue: [https://github.com/tidyverse/ggplot2/issues/1619](https://github.com/tidyverse/ggplot2/issues/1619). You can change the size of the plot to make all dots visible. But this might cause other problems.
+
+- Frequency polygon
+
+```{r freqpplot}
+GPA_freqp <- ggplot(data = FirstYearGPA, aes(GPA)) + 
+  geom_freqpoly(binwidth = 0.1)
+
+GPA_freqp
+```
+
+Note that I changed the bin width to 0.1 again.
+
+- Histogram
+
+```{r histplot}
+GPA_hist <- ggplot(data = FirstYearGPA, aes(GPA)) +
+  geom_histogram(binwidth = 0.1)
+
+GPA_hist
+```
+
+Note that I changed the bin width to 0.1 again.
+
+- Quantile-quantile plot
+
+All of the plots above show the shape of the distribution. We can see that it's roughly normal-ish but not a perfect normal. We can use the qq (quantile-quantile) plot to see just how normal GPA is.
+
+A standard qqplot of GPA
+
+```{r qqplot1}
+GPA_qq1 <- ggplot(data = FirstYearGPA) +
+  geom_qq(aes(sample = GPA))
+
+GPA_qq1
+```
+
+Add a diagonal line to the plot
+
+```{r qqplot2}
+GPA_qq2 <- ggplot(data = FirstYearGPA) +
+  geom_qq(aes(sample = GPA)) +
+  geom_qq_line(aes(sample = GPA))
+
+GPA_qq2
+```
+
+Mostly normal in the middle, but the tails are a little off. This is probably because GPA isn't really normal -- it has an upper bound around 4.0, an actual lower bound of 0, and a practical lower bound around 2.0.
+
+Notice that the X axis is the theoretical distribution (normal); the values are z-scores. The Y axis is the actual observed GPA variable, which ranges from a bit below 2 to just over 4.
+
+- Bar plot (for 1 discrete variable)
+
+Here is a bar plot for gender. The variable name is "Male" meaning that 1 = male and 0 = female.
+
+```{r barplot}
+gender_bar <- ggplot(data = FirstYearGPA, aes(x = Male)) + 
+  geom_bar()
+
+gender_bar
+```
+
+There are slightly more women than men in this sample.
+
+- Adjustments to bar plots
+
+Let's break this down a little further. There is a variable called "FirstGen" that is coded 1 if the student is the first in their family to attend college and 0 otherwise. It is categorical but R considers it just a number, so we will have to **coerce** (this is actually the term from computer science) R into considering it as a category. The "as.factor()" function tells R to consider this number to be a *factor* variable (a category -- think ANOVA factors).
+
+We'll make a bar plot like above, but in addition to gender, we'll include first generation status. There are a couple of ways to do this. If we don't add any additional options, we get this:
+
+```{r geom_bar_1stgen_gender}
+gender_and_1stgen <- ggplot(data = FirstYearGPA, aes(Male, fill = as.factor(FirstGen))) +
+  geom_bar()
+
+gender_and_1stgen
+
+```
+
+This shows the raw counts for each category. They're stacked on top of one another, which may make it difficult to judge differences between the top bars.
+
+There are three options to tweak how the bars show up in the plot. The default is "stack" which you can explicitly state using:
+
+```{r geom_bar_1stgen_gender_stack}
+gender_and_1stgen_stack <- ggplot(data = FirstYearGPA, aes(Male, fill = as.factor(FirstGen))) +
+  geom_bar(position = "stack")
+
+gender_and_1stgen_stack
+
+```
+
+The next option is to have the bars side by side using the "dodge" option.
+
+```{r geom_bar_1stgen_gender_dodge}
+gender_and_1stgen_dodge <- ggplot(data = FirstYearGPA, aes(Male, fill = as.factor(FirstGen))) +
+  geom_bar(position = "dodge")
+
+gender_and_1stgen_dodge
+
+```
+
+This can make it a bit easier to compare all groups, since they all start at the bottom of the plot.
+
+The third option is the "fill" option.
+
+```{r geom_bar_1stgen_gender_fill}
+gender_and_1stgen_fill <- ggplot(data = FirstYearGPA, aes(Male, fill = as.factor(FirstGen))) +
+  geom_bar(position = "fill")
+
+gender_and_1stgen_fill
+
+```
+
+This looks similar to the "stacked" or default option but if you look closely, you can see that both bars (Male and Female) are the same height here. The bars are filled vertically. So even though we know (from previous plots) that there are more women than men in the sample, the bars here are the same height. This could really confuse you if you didn't realize it and wanted to compare the overall numbers between the genders -- so be careful! What it's really good for, though, is comparing the proportion of first generation students across gender. It makes it easier to clearly see taht there are fewer first generation students among the male students.
+
+
+## Geoms for 2 variables
+
+### Continuous X and continuous Y
+
+Plots for continuous X and Y variables, such as high school GPA (X) versus 1st year college GPA (Y).
+
+- Scatterplot
+
+```{r GPApoint}
+
+GPA_point <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point()
+
+GPA_point
+
+```
+
+Basic scatter plot of the high school and college GPA values.
+
+- Scatterplot with jitter
+
+We could add some jitter to the points.
+
+```{r GPAjitter}
+
+GPA_jitter <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_jitter()
+
+GPA_jitter
+
+```
+
+But the points don't overlap too much, so it doesn't improve things. Jitter can be very useful when many people have the same value for a variable.
+
+- Regression line
+
+Let's add a linear model (i.e., linear regression) to the scatterplot:
+
+```{r GPAreg}
+
+GPA_reg <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_reg
+
+```
+
+As you might expect, it looks like GPA in high school is *positively* related to GPA in college. But the relationship is far from perfect. 
+
+The "fill = NA" option means that there is no standard error bands around the regression line. Omit that option to include the standard error bands.
+
+Notice that you need to specify the point **and** the line. If you just add the line but forget the point geom -- no points!
+
+```{r GPAreg_nopoint}
+
+GPA_regnopoints <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_regnopoints
+
+```
+
+- Loess line
+
+We could also try a non-linear relationship using the loess line smooth:
+
+```{r GPAloess}
+
+GPA_loess <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_smooth(method = loess, fill = NA)
+
+GPA_loess
+
+```
+
+Still a positive relationship, but it seems to be non-constant across values of HS GPA. This could mean that a nonlinear (i.e, quadratic, other transformation) model might work better. Another option would be a piecewise model -- you have a different line for, say, HS GPA < 3.0, another for 3.0 to 3.5, another for > 3.5> This could be data-driven (by looking at a plot like this) or theory-driven (how are B HS students different from A HS students when they get to college?) or both. 
+
+- Quantile regression
+
+Another option is a quantile regression. Linear regression is based on means, but quantile regression is based on the median (i.e., the 50%ile). This can be useful for very skewed outcomes. It requires another package called "quantreg" to run.
+
+```{r GPAquantile}
+
+#install.packages("quantreg")
+library(quantreg)
+
+GPA_quantile <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_quantile()
+
+GPA_quantile
+
+```
+
+There are lines at the 1st, 2nd, and 3rd quartiles -- i.e., the 25th %ile, the 50th %ile, the 75th %ile. Notice that the 25th and 75th %iles are not equally distant from the median -- shows that there's some skew.
+
+- Several lines together
+
+How does the quantile regression compare to linear regression? Let's throw them in the same plot as multiple layers...
+
+```{r GPAquantlin}
+
+GPA_quant_lin <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_quantile() +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_quant_lin
+
+```
+
+Slightly different slopes but pretty similar story. How about if I make the line for the linear model a different color to see it more easily?
+
+```{r GPAquantlincolor}
+
+GPA_quant_lin_color <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_quantile() +
+  geom_smooth(method = lm, fill = NA, color = "red")
+
+GPA_quant_lin_color
+
+```
+
+Now it's really easy to see the difference between the quantile regression and linear regression. Nearly every function you can add to *ggplot* has options to change the color of the object like this.
+
+- Arbitrary line
+
+Let's look at a completely different kind of line. This one is not one based on the data. It's a simple $Y = X$ line, which gives a perfect diagonal. What this line helps us understand is whether students are over or underperforming in their first year of college, based on their HS GPA. I'm going to make the line blue.
+
+```{r GPAdiag}
+
+GPA_diag <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_abline(aes(intercept = 0, slope = 1), color = "blue")
+
+GPA_diag
+
+```
+
+The $Y = X$ line runs through points that are equal for both X and Y: X = 3.0 and Y = 3.0, etc. Points above the line are students who have a **higher** college GPA than HS GPA; points below the line are students who have a **lower** college GPA than HS GPA. You can see from this plot that students generally do worse in their first year of college than they did in high school (because most points are below the line).
+
+We could also add horizontal and/or vertical lines to signify certain values on the Y and X axes, respectively. I'll add a red vertical line corresponding to HS GPA of 3.0 and a blue horizontal line corresponding to first year college GPA of 3.5.
+
+```{r GPAreflines}
+
+GPA_reflines <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_vline(aes(xintercept = 3.0), color = "red") +
+  geom_hline(aes(yintercept = 3.5), color = "blue")
+
+GPA_reflines
+
+```
+
+- Include a grouping variable
+
+I want to show you how including a grouping variable works differently depending on where you put it. (And in fact, some places that you might think would work do not.) 
+
+Let's return to the plot we've already made, with a scatterplot of HS GPA (X) versus first year college GPA (Y) with a straight line fit to the points. I could just name the plot that we already made earlier, but I'm going to re-create it under a new name (GPA_reg_again) just so that we have the syntax right here.
+
+```{r GPAreg_again}
+
+GPA_reg_again <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_reg_again
+
+```
+
+Now, let's say that we want to incorporate information about first generation status (a group variable) into this plot. We have a couple of different things we can do, some of which will work and some of which will not. 
+
+How this plays out is a little non-obvious when you're first getting started, but once you start thinking about what each function adds to the plot, it makes sense. Thinking about this nuance will help you make better plots.
+
+First, I'll try adding the group variable to the ggplot function.
+
+```{r add_to_ggplotfxn}
+GPA_reg_ggplot <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA), group = as.factor(FirstGen)) +
+  geom_point() +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_reg_ggplot
+
+```
+
+Ok. Nothing happened. It didn't do anything with the group variable. The reason is that we haven't associated the group variable with any *aesthetics* in the plot. Aesthetics are the physical objects and we don't have any physical objects associated with FirstGen.
+
+Since we want to affect the physical objects, let's try adding the group variable to the aesthetic function.
+
+```{r add_to_ggplotfxn2}
+GPA_reg_aes <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA, group = as.factor(FirstGen))) +
+  geom_point() +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_reg_aes
+
+```
+
+Ok, so we have two lines that aren't distinguishable from each other. We've incorporated group information, but haven't conveyed it in the plot using any of the aesthetics (i.e., color, shape, other physical features).
+
+This really isn't doing what you might want it to. Let's be more specific. We want to **change the colors** in the plot depending on first generation status. So let's say that. We include "color" as an option in the aes function.
+
+```{r add_to_aesfxn}
+GPA_reg_aes2 <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA, color = as.factor(FirstGen))) +
+  geom_point() +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_reg_aes2
+
+```
+
+This finally works! It changes color for both the points and the lines, which is nice because then they match.
+
+What would happen if we tried to add the color option to the ggplot function (but not in the aesthetic function)?
+
+```{r add_to_ggplotfxn_color}
+GPA_reg_ggplot_color <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA), color = as.factor(FirstGen)) +
+  geom_point() +
+  geom_smooth(method = lm, fill = NA)
+
+GPA_reg_ggplot_color
+
+```
+
+Again, this doesn't do what we want. The reason is that "color" isn't an option for the ggplot function, it's only an option for the aesthetic function.
+
+Ok, so we can include color options in some other functions. I'm going to show you to code for that, but it won't run, so I'm commenting it out.
+
+#```{r add_to_smoothfxn}
+GPA_reg_smooth <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA, color = as.factor(FirstGen))) +
+  geom_point() +
+  geom_smooth(method = lm, fill = NA, color = "FirstGen")
+
+GPA_reg_smooth
+
+#```
+
+If you uncomment this code chunk and try just running the chunk, you'll get an error and no plot - this doesn't work at all. But notice the error message it gives you:
+
+> invalid color name 'FirstGen'
+
+So it turns out that color **is** an option for the geom_smooth function, but not the same way. You can't specify a color that depends on a variable. (You can just specify a a color, like "red," which we'll talk more about next week).
+
+You would get the same error if you tried to add the color option to the geom_points function. 
+
+- Rugs along margins
+
+You can add the "rug" to the edges of each axis to show the univariate distribution of each variable as well. I'll add it to the simple scatter plot.
+
+```{r GPArug}
+
+GPA_rug <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_rug()
+
+GPA_rug
+
+```
+
+You can see in a single plot both the relationship between high school GPA and 1st year college GPA **and** the univariate distributions of each. HS GPA is a little more skewed -- people with the lowest HS GPAs were just less likely to go to college.
+
+Some other more interesting plots for 2 continuous variables. These are plotting the same variables as the scatter plot.
+
+- Heat map with square grid
+
+```{r heat1}
+GPA_heat1 <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_bin2d(binwidth = c(0.1, 0.1))
+
+GPA_heat1
+
+```
+
+Color coded based on how many observations are in each square of the grid. Defining useful bin widths is key here.
+
+- Heat map with hexagon grid
+
+This requires the "hexbin" package in order to calculate the counts within each hex bin.
+
+```{r heat2}
+#install.packages("hexbin")
+library(hexbin)
+
+GPA_heat2 <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_hex()
+
+GPA_heat2
+
+```
+
+- Contour plot
+
+Contour plots are often used to show elevation. Each line is associated with a height. The height here reflects how many points there are, similar to the counts for the heat map plots.
+
+```{r contour}
+
+GPA_contour <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_density2d()
+
+GPA_contour
+
+```
+
+There's no defaut legend here, so a little hard to interpret.
+
+You can add the points to the contour plot. It's just another layer in the plot.
+
+```{r contour_points}
+
+GPA_contourpoints <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA)) +
+  geom_point() +
+  geom_density2d()
+
+GPA_contourpoints
+
+```
+
+### Discrete X and continuous Y
+
+Let's look at some plots to use when X is discrete and Y is continuous. These are various types of column plots, box plots, etc. that we've seen before. But now we have a bit of context about when these plots would be used -- with a discrete X and continuous Y.
+
+- Column plot
+
+I'll use the first generation student variable from before, along with first year GPA.
+
+The column plot seems like a good idea, but it is not as helpful as you might think.
+
+```{r columnplot}
+
+GPA_column <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_col()
+
+GPA_column
+
+```
+
+There are 219 observations in this dataset. So where is the 600+ in the left column coming from? That is the sum of the GPAs of all the people who are not 1st generation students. Not very helpful. I guess there could be a situation where this is useful but this is not it...
+
+- Box plot
+
+```{r boxplot}
+
+GPA_boxplot <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_boxplot()
+
+GPA_boxplot
+
+```
+
+First generation students (1) have a lower median 1st year college GPA. They also have a smaller range of GPAs than non-first generation students.
+
+Let's look at a dot plot of the same thing. To get something that looks like a box plot, we use the option "binaxis = "y"" to tell R to line up the bins along the Y axis (as opposed to the X axis, which is how we did a dot plot before).
+
+- Dot plot
+
+```{r GPAdotplot}
+
+GPA_dotplot <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_dotplot(binaxis = "y")
+
+GPA_dotplot
+
+```
+
+These look like little sideways dot plots. We can center the points to make them a little easier to look at. (The current version make me want to turn my head...)
+
+```{r GPAdotplotcenter}
+
+GPA_dotplotcenter <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_dotplot(binaxis = "y", stackdir = "center")
+
+GPA_dotplotcenter
+
+```
+
+The dot plots help you see that, not only is the average GPA lower for first generation college students, there are a **lot** fewer of them. You couldn't tell that from the box plots.
+
+Note R's comment that we should pick better bin widths -- we should.
+
+The final plot here is the violin plot. It is like a smoothed version of the dot plot.
+
+- Violin plot
+
+```{r GPAviolin}
+
+GPA_violin <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_violin()
+
+GPA_violin
+
+```
+
+Notice that the violin plot doesn't do as good of a job showing the sample size discrepancy between first generation students and not. Let's add a rug layer to the violin plot to see if we can get the best of both worlds -- smoothed distribution plus some idea of the sample size differences.
+
+- Some combo plots
+
+```{r GPAviolinrug}
+
+GPA_violinrug <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_violin() +
+  geom_rug()
+
+GPA_violinrug
+
+```
+
+Hmm, didn't really help, since we don't know which little dash is which group. How about adding the first generation variable to the rug layer? We can make each group a different color. This seems like it should be fairly easy, but it requires a little bit of thought.
+
+First, we need to specify an "aesthetic" in both the violin and rug layers. Remember aesthetic here just refers to the mapping of a variable to an object. We already mapped FirstGen and GPA to the X and Y axes, respectively. In each layer, we'll map the FirstGen variable to a color aesthetic. We'll still use the "as.factor()" function too, so that R treats the FirstGen variable like a dummy code.
+
+```{r GPAviolinrugcolor}
+
+GPA_violinrugcolor <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_violin(aes(color = as.factor(FirstGen))) +
+  geom_rug(aes(color = as.factor(FirstGen)))
+
+GPA_violinrugcolor
+
+```
+
+Look at that! An exciting new type of graph! It shows the distributions in multiple places, gives you a smooth, and shows you the different sample sizes. Neat!
+
+Here's another combo plot. Put the dots inside the violins.
+
+```{r GPAviolindot}
+
+GPA_violindot <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_dotplot(binaxis = "y", stackdir = "center") +
+  geom_violin()
+
+GPA_violindot
+
+```
+
+Oh no! Where did my dots go?!?
+
+They're just hiding behind the violin. Let's make the violins more transparent using the "alpha" option.
+
+```{r GPAviolindotalpha}
+
+GPA_violindotalpha <- ggplot(data = FirstYearGPA, aes(x = as.factor(FirstGen), y = GPA)) +
+  geom_dotplot(binaxis = "y", stackdir = "center") +
+  geom_violin(alpha = 0.2)
+
+GPA_violindotalpha
+
+```
+
+This might be a better option in, say, an article. Journals often don't want you to use color in graphics.
+
+### Discrete X and discrete Y
+
+- Count plot
+
+This plot is used when you have two discrete variables and want a graphical display of the counts of observations in each cell. I'm going to look at the first generation status of male and female students.
+
+```{r countplot}
+countplot <- ggplot(data = FirstYearGPA, aes(x = as.factor(Male), y = as.factor(FirstGen))) +
+  geom_count()
+
+countplot
+
+```
+
+You can change the circles to another shape, say squares.
+
+```{r countplotsq}
+countplotsq <- ggplot(data = FirstYearGPA, aes(x = as.factor(Male), y = as.factor(FirstGen))) +
+  geom_count(shape = "square")
+
+countplotsq
+
+```
+
+I don't love these plots. As we've discussed, we're bad at visually comparing areas, so we can tell that there are fewer first generation students and that there are fewer first generation men (1) than women (0), but not **how many** fewer. So this should be accompanied by some labels or annotation with the actual values (we'll talk about annotation soon), or just using another method (like (*gasp*) a table).
+
+### Continuous function
+
+This is useful when you have a continuous variable (such as year or week -- time is a common one) and you want to show how a **single** observation per time point is changing. For this, I'm going to use the *gapminder* dataset and show you how a variable changes over time.
+
+I'm going to select just the observations for the United states, keeping all years of data.
+
+```{r gapminder}
+#install.packages("gapminder")
+library(gapminder)
+gapminder_US_allyears <- gapminder %>%
+    filter(country == "United States") 
+
+glimpse(gapminder_US_allyears)
+```
+
+There are 12 observations - one observation every 4 years starting in 1952. There is only one country - the United States.
+
+- Area plot
+
+Let's look at how life expectancy changes over time. There are a couple of ways to do this, including one way that we've already used before. The year variable is the X variable and life expectancy is the Y variable.
+
+```{r gap_geomarea}
+gap_area <- ggplot(data = gapminder_US_allyears, aes(x = year, y = lifeExp)) +
+  geom_area()
+
+gap_area
+  
+```
+
+You can easily see that life expectancy is steadily increasing over time. This function make a slanted line between observations and fills in the shape. Note that it will by default make the Y axis go to 0.
+
+- Line plot
+
+Another option is a line. The line plot is similar to the area plot, only without filling in the shape.
+
+```{r gap_geomline}
+gap_line <- ggplot(data = gapminder_US_allyears, aes(x = year, y = lifeExp)) +
+  geom_line()
+
+gap_line
+  
+```
+
+Notice that the Y axis doesn't go to 0 with this function. There's no concern about filling in an area, so it doesn't consider that Y might extend to 0. (We'll talk soon about changing the axes to force it to show 0, if you want.)
+
+- Step line
+
+This is similar to the line plot except that the line shows up as steps for each observation instead of a smooth line.
+
+```{r gap_geomstep}
+gap_step <- ggplot(data = gapminder_US_allyears, aes(x = year, y = lifeExp)) +
+  geom_step()
+
+gap_step
+  
+```
+
+This version might be useful if your observations aren't equally spaced and you want to show that. Here, they're equally spaced, so it's maybe not as effective.
+
+Let's put the actual points and both lines in a single plot so you can see everything.
+
+```{r gap_mult}
+gap_mult <- ggplot(data = gapminder_US_allyears, aes(x = year, y = lifeExp)) +
+  geom_step(color = "blue") +
+  geom_line(color = "red") +
+  geom_point()
+
+gap_mult
+```
+
+You can see how the line plot and the step plot show the transition between points differently.
+
+- Other options: multiple lines
+
+A good use of plots like this is to show trajectories from several sources all at once. We often cal these "spaghetti plots" because they're a bunch of lines all on top of one another -- they look like a bunch of noodles.
+
+Let's include all the countries. But first, let me show you a way that you might try to do this that won't work.
+
+```{r gap_all_wrong}
+gap_all_wrong <- ggplot(data = gapminder, aes(x = year, y = lifeExp)) +
+  geom_line()
+
+gap_all_wrong
+```
+
+In this plot, I didn't tell ggplot what to do with the fact that there are multiple observations per year. Since there is one observation per country per year and it's trying to draw a line, you end up with this ugliness.
+
+Let's do this right. We have to tell ggplot that there are multiple countries. We do this by using the **group** option in the geom_line function.
+
+```{r gap_all}
+gap_all <- ggplot(data = gapminder, aes(x = year, y = lifeExp)) +
+  geom_line(aes(group = country))
+
+gap_all
+```
+
+Yep, looks like spaghetti. We can try to make things a little easier to see by breaking up the countries (remember, there are 142 countries, so 142 lines!).
+
+We already saw that life expectancy varies across the continents, so let's make the lines different colors for the different continents.
+
+```{r gap_all_color}
+gap_all_color <- ggplot(data = gapminder, aes(x = year, y = lifeExp, color = continent)) +
+  geom_line(aes(group = country))
+
+gap_all_color
+```
+
+This is a little easier to see patterns. You can see that African countries have lower life expectancies (but increasing over time) while European countries have the highest.
+
+- Other other options: faceted plots
+
+Another option to break this plot up some is to **facet** the plot into "small multiples" of the same plot. To do this, we start with the plot that had all the lines, which is called "gap_all" above. We can start with that plot and add a facet function to it.
+
+We will facet by continent, so we can see each continent separately.
+
+```{r gap_facet}
+gap_facet <- gap_all +
+  facet_grid(cols = vars(continent))
+
+gap_facet
+
+```
+
+Ok, this looks cool. We have broken up the observations so that we can see the individual lines better, but since they're all side by side, we can still make some comparisons across the facets (continent). The X axis is a little squished though -- we'll talk about fixing that next week.
+
+Notice that this plot made facets horizontally ("cols =" option). You can also facet vertically.
+
+```{r gap_facet_vert}
+gap_facet_vert <- gap_all +
+  facet_grid(rows = vars(continent))
+
+gap_facet_vert
+
+```
+
+The equivalent plot using vertical faceting helps unsquish the X axis, but you can't compare the facets on their average level as easily. So you'll want to choose the direction that lets you make the comparisons of interest.
+
+- Other other other options: Change the coordinate system
+
+Here is a kind of wacky way to plot this. A version like this is in the "25 plots" link. I'm going to switch back to the data for just the United States. 
+
+I'm going to use one of the coordinate systems functions to switch from cartesian (X Y) coordinates to polar coordinates. Polar coordinates ( [https://en.wikipedia.org/wiki/Polar_coordinate_system](https://en.wikipedia.org/wiki/Polar_coordinate_system) ) are 2 dimensional, with 1 dimension representing the distance out from the center and 1 dimension representing how far around the circle you move.
+
+```{r polar}
+gap_line_polar <- ggplot(data = gapminder_US_allyears, aes(x = year, y = lifeExp)) +
+  geom_line() +
+  coord_polar()
+
+gap_line_polar
+```
+
+The plot starts at the top by default, but you can change that by using the "theta =" option.
+
+This version of the plot makes it easier to compare the two ends to see how the values have changed over time.
+
+You can do the same thing to a bar plot (geom_bar) to make the "rose histogram" or "cockscomb" figures that Florence Nightengale developed.
+
+
+
+
+

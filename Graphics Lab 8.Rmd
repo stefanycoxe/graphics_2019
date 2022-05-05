@@ -1,0 +1,135 @@
+---
+title: "Graphics week 8 lab"
+author: "Stefany Coxe"
+date: "10/17/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("Stat2Data")
+#install.packages("gapminder")
+#install.packages("jtools")
+#install.packages("skimr")
+#install.packages("nullabor")
+#install.packages("interactions")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(gapminder)
+library(jtools)
+library(ggrepel)
+library(ggthemes)
+```
+
+# Lab tasks
+
+For each plot:
+
+- Come up with a better title that "says what you see"
+
+  - Do you need to add a subtitle or a caption to help explain things?
+
+- Give a 1 to 2 sentence summary of the findings
+
+- Give a 1 to 2 sentence summary of the findings for a public (non-scientist) audience
+
+
+
+
+\newpage
+```{r co2hawaii_fig}
+data(CO2Hawaii)
+
+ggplot(data = CO2Hawaii, aes(x = as.factor(Month), group = as.factor(Year), y = CO2)) +
+geom_line(aes(color = Year)) +
+scale_color_gradient(low = "green", high = "red") +
+labs(title = "BETTER TITLE GOES HERE", x = "Month", y = "CO2 (parts per million)") +
+theme_bw() +
+        scale_x_discrete(breaks=c(1:12),
+        labels=c("January", "February", "March", "April", "May", "June", 
+                 "July", "August", "September", "October", "November", "December")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+\newpage
+```{r kids198_fig}
+data(Kids198)
+
+Kids198 <- Kids198 %>%
+    mutate(Age_years = Age / 12)
+
+
+ggplot(data = Kids198, aes(x = Age_years, y = Height, color = as.factor(Sex))) +
+    geom_point(alpha = 0.4) +
+    labs(title = "BETTER TITLE GOES HERE", 
+         x = "Age (years)", y = "Height (inches)", color = "Gender") +
+    scale_colour_manual(values=c("0" = "blue", "1" = "red"), labels = c("Male", "Female")) +
+    theme(legend.position = "bottom") +
+    theme_classic() +
+    geom_smooth(method = loess, se = TRUE, alpha = 0.2) +
+    scale_x_continuous(breaks = c(8, 10, 12, 14, 16, 18))
+
+```
+
+\newpage
+```{r religiongdp_fig}
+data(ReligionGDP)
+
+ggplot(data = ReligionGDP, aes(x = Religiosity, y = GDP)) +
+    geom_point() +
+    annotate(geom = "rect", xmin = 0, xmax = 1, ymin = 30000, ymax = 60000, alpha = 0.2) +
+    #annotate(geom = "text", x = 1, y = 57500, 
+    #         label = "The highest GDP countries have lower religiosity...") +
+    geom_text_repel(aes(label=ifelse((Religiosity < 1) & (GDP > 30000),as.character(Country),'')), 
+                    color = "blue") +
+    #annotate(geom = "text", x = 2.25, y = 50000, 
+    #         label = "...with a few exceptions") +
+    geom_text_repel(aes(label=ifelse((Religiosity > 1) & (GDP > 30000),as.character(Country),'')), 
+                    color = "red") +
+    theme_economist() +
+    labs(title = "BETTER TITLE GOES HERE")
+```
+
+\newpage
+```{r election08_fig}
+data(Election08)
+
+ggplot(data = Election08, aes(x = as.factor(ObamaWin), y = Dem.Rep, fill = as.factor(ObamaWin))) +
+geom_dotplot(binwidth = 3, binaxis = "y", stackdir = "center") +
+geom_violin(alpha = 0.2) +
+labs(title = "BETTER TITLE GOES HERE", 
+     x = "Obama won the state?", 
+     y = "% Democratic voters - % Republican voters \n in a state") +
+    guides(fill = FALSE) +
+annotate(geom= "segment", x = 0.4, xend = 2.6, y = 0, yend = 0, linetype = "dashed") +
+    annotate(geom = "text", x = 2, y = -15, 
+             label = "States below the line \n have more Republican voters") +
+    annotate(geom = "text", x = 1, y = 35, 
+             label = "States above the line \n have more Democrat voters") +
+    theme_classic() +
+    scale_x_discrete(breaks=c("0","1"),
+        labels=c("No", "Yes"))
+
+```
+
+\newpage
+```{r commute fig}
+data(MetroCommutes)
+
+ggplot(data = MetroCommutes, aes(reorder(City, Time, fun = median), y = Time, fill = City)) +
+    geom_boxplot() +
+    coord_flip() +
+    labs(title = "BETTER TITLE GOES HERE", y = "Time (minutes)", x = "") +
+    theme_fivethirtyeight() +
+    scale_y_continuous(breaks = c(0, 60, 120, 180)) +
+  theme(legend.position = "none")
+```
+
+

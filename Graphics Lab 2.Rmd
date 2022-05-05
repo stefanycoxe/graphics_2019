@@ -1,0 +1,501 @@
+---
+title: "Graphics week 2 lab"
+author: "Stefany Coxe"
+date: "9/5/2019"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+set.seed(31415)
+```
+
+# Getting started with ggplot2
+
+## First dataset
+
+The first dataset we will use today comes from the **dslabs** package, which is a package that contains more than a dozen real datasets to demonstrate R and ggplot2. All the information about the package and the datasets can be found in its CRAN repository here: [https://cran.r-project.org/web/packages/dslabs/dslabs.pdf](https://cran.r-project.org/web/packages/dslabs/dslabs.pdf)
+
+```{r install_dslabs}
+#install.packages("dslabs")
+library(dslabs)
+```
+
+I'm going to start out using the dataset of student heights. It is a little boring but easy to understand. There are only two variables:
+
+- Height (continuous)
+- Sex (categorical)
+
+Let's look at it. There are a couple of commands in R to just look at your data. 
+
+### 1. Name dataset
+
+Just use the name of the dataset. But **BEWARE** that this will list all of the data. Don't do this if the dataset is large.
+
+I'm going to leave it commented out...
+
+```{r heights_name}
+
+# heights
+
+```
+
+### 2. Head function
+
+The "head" function shows just the variable names and the first few rows. (The "tail" function shows the variable names and the last few rows.)
+
+
+```{r heights_head}
+
+head(heights)
+
+```
+
+### 3. Dim function
+
+The dim function is from dplyr / tidyverse. It tells you about the dimension of the dataset in **rows, columns** format.
+
+```{r heights_dim}
+
+dim(heights)
+
+```
+
+### 4. Glimpse function
+
+Glimpse is also from dplyr / tidyverse. It's kind of a combination of the dim and head functions.
+
+Glimpse also gives you some info about the variables - which are categorical (factor or fct) and which are continuous (double or dbl).
+
+```{r heights_glimpse}
+
+glimpse(heights)
+
+```
+
+## Plots of heights (by gender)
+
+There are only two variables here -- sex and height -- but we have several ways that we can plot them. First, I will plot just height so that you can see how the plot works, then **layer** on the additional information about gender.
+
+### Three ways to plot height
+
+With only a single variable, we are only plotting on one dimension. Depending on the plot, that will either be the x or the y axis.
+
+#### 1. Box plot
+
+The box plot is vertical, so the *height* variable is associated with the y aesthetic.
+
+```{r height_boxplot}
+
+height_box <- ggplot(data = heights, aes(y = height)) + 
+  geom_boxplot()
+
+height_box
+
+```
+
+Not very pretty but it does it's job.
+
+#### 2. Histogram
+
+The histogram is horizontal, so the *height* variable is associated with the x aesthetic.
+
+```{r height_histo}
+
+height_histo <- ggplot(data = heights, aes(x = height)) + 
+  geom_histogram()
+
+height_histo
+
+```
+
+This looks like something useful, but note the comment from R:
+
+`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+The appearance of a histogram can change a lot depending on how many "bins" or bars you select. We used the default here. Is that the best one to use? Maybe, maybe not.
+
+#### 3. Smoothed density plot
+
+This is a smoothed version of the histogram. It helps with any oddness due to specific bin size.
+
+```{r height_smooth}
+
+height_smooth <- ggplot(data = heights, aes(x = height)) + 
+  geom_density()
+
+height_smooth
+
+```
+
+This might be more useful. It looks like a continuous distribution like we assume height to be. We're not obscuring things by having too many or too few bars.
+
+### Three ways to plot height and sex
+
+#### 1. Box plot
+
+Since the height box plot is **vertical**, we want the male and female box plots to be laid out **horizontally**, so the *sex* variable is associated with the x aesthetic.
+
+```{r height_boxplot_bysex}
+
+height_box_sex <- ggplot(data = heights, aes(x = sex, y = height)) + 
+  geom_boxplot()
+
+height_box_sex
+
+```
+
+#### 2. Histogram
+
+The height box plot is **horizontal** but unfortunately, we can't just reverse what we did for the box plot. Instead, we use the *fill* aesthetic to fill the bars with different colors for men and women. 
+
+```{r height_histo_bysex}
+
+height_histo_sex <- ggplot(data = heights, aes(x = height, fill = sex)) + 
+  geom_histogram()
+
+height_histo_sex
+
+```
+
+This is not ideal. The bars are on top of one another, so you can't tell where they overlap
+
+#### 3. Smoothed density plot
+
+We are making the smoothed plots again, colored by sex. As with the histogram, we use the *fill* aesthetic to fill the bars with different colors for men and women. 
+
+```{r height_smooth_bysex}
+
+height_smooth_sex <- ggplot(data = heights, aes(x = height, fill = sex)) + 
+  geom_density()
+
+height_smooth_sex
+
+```
+
+The plots are still overlapping. Let's make the fill color less opaque so we can see both distributions by using the *alpha* option in the geom_density portion of the plot.
+
+```{r height_smooth_bysex_alpha.3}
+
+height_smooth_sex_alpha <- ggplot(data = heights, aes(x = height, fill = sex)) + 
+  geom_density(alpha = 0.3)
+
+height_smooth_sex_alpha 
+
+```
+
+Looks good. Now we can see the distributions for both sexes.
+
+#### 4. Violin plot
+
+Another option in this situation is the violin plot. It's a bit like the smoothed histogram, only on its side (and side-by-side instead of overlapping) like the box plot. 
+
+```{r height_violinplot_bysex}
+
+height_violin <- ggplot(data = heights, aes(x = sex, y = height)) + 
+  geom_violin()
+
+height_violin
+
+```
+
+These are plots for a single variable (sometimes split by a second categorical variable). Very simple. Let's move to something more complex that's more like what we might encounter in our own real data.
+
+## Second dataset
+
+The second dataset we will use today comes from the **fivethirtyeight** package, which is just a bunch of datasets that [www.fivethirtyeight.com](www.fivethirtyeight.com) has used over the years. There is more information about the package at its CRAN repository here: [https://cran.r-project.org/web/packages/fivethirtyeight/fivethirtyeight.pdf](https://cran.r-project.org/web/packages/fivethirtyeight/fivethirtyeight.pdf)
+
+```{r install_538}
+#install.packages("fivethirtyeight")
+library(fivethirtyeight)
+```
+
+The **bechdel** dataset includes budget and earnings for nearly 2000 movies. It also includes information about whether each movie has passed the Bechdel test -- that there are 2 named female characters who talk to each other for at least 5 minutes about something other than a male character. (Not a terribly high bar, yet...) You can read more about the Bechdel test here: [https://en.wikipedia.org/wiki/Bechdel_test](https://en.wikipedia.org/wiki/Bechdel_test)
+
+Let's take a look at the dataset, as before.
+
+### 1. Name dataset
+
+You can name the dataset, but I've commented it out, as before, because the dataset is very large.
+
+```{r bechdel_name}
+
+# bechdel
+
+```
+
+### 2. Head function
+
+```{r bechdel_head}
+
+head(bechdel)
+
+```
+
+You can see that there are a number of variables. There are 15 variables of various types: character (chr), integer (int), number (dbl), ordered category (ord). The type of variable affects the plot you can make using that variable.
+
+### 3. Dim function
+
+```{r bechdel_dim}
+
+dim(bechdel)
+
+```
+
+**- How many rows and columns? Rows are what? Columns are what?**
+
+### 4. Glimpse function
+
+```{r bechdel_glimpse}
+
+glimpse(bechdel)
+
+```
+
+I love that Dredd 3D (2012) is the only movie in these first few that passed the Bechdel test...
+
+## Scatterplots
+
+We have already looked at some *unidimensional* plots. Let's look at some plots involving two variables. 
+
+### Budget versus domestic gross
+
+How does a movie's budget compare to its earnings?
+
+Let me first show you what you might think will work but doesn't.
+
+```{r broken_budget_vs_domestic}
+
+broken_budget_vs_domestic <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross))
+
+broken_budget_vs_domestic
+
+```
+
+We've got the dataset. We've got the x and y. Why is there nothing in the plot? Because we didn't ask for any **geometric objects** in the plot. 
+
+In order to have points or bars or any other objects in the plot, we have to include a geometric object. For a scatter plot, we use geom_point to get points.
+
+```{r budget_vs_domestic}
+
+budget_vs_domestic <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross)) +
+    geom_point()
+
+budget_vs_domestic
+
+```
+
+Notice that there are many movies with both low budget and low earnings. They are all on top of one another -- this is called "overplotting". We can make the points less opaque to see these points more easily. 
+
+We want to adjust the "alpha" (opacity) of the points themselves, so we add an option to the geom_point function. The alpha value is between 0 and 1, with higher values being more opaque.
+
+```{r budget_vs_domestic_alpha}
+
+budget_vs_domestic_alpha <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross)) +
+    geom_point(alpha = 0.2)
+
+budget_vs_domestic_alpha
+
+```
+
+This helps but not as much as we might like. Let's also adjust the scales some. Both budget and earnings are pretty skewed, so let's try a log transformation of both.
+
+```{r budget_vs_domestic_alpha_log}
+
+budget_vs_domestic_alpha_log <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross)) +
+    geom_point(alpha = 0.2) +
+    scale_x_log10() +
+    scale_y_log10()
+
+budget_vs_domestic_alpha_log
+
+```
+
+Okay, so what we can see is that movies with larger budgets also make more money -- this isn't shocking or, in fact, particularly interesting.
+
+### Passing the Bechdel test
+
+Let's look at the information about the Bechdel test. First, let's do a unidimensional plot of the Bechdel test variables.
+
+```{r bechdel_binary}
+
+bechdel_bar <- ggplot(bechdel, aes(x = binary)) + geom_bar()
+
+bechdel_bar
+
+```
+
+This plot uses the geom_bar object to make a bar plot. (We could set the "binary" variable to the y dimension to make horizontal bars.)
+
+A bit more than half of the movies failed. There is another variable that indicates why a movie failed. Let's look at that.
+
+```{r bechdel_test}
+
+bechdel_bar_why <- ggplot(bechdel, aes(x = clean_test)) + geom_bar()
+
+bechdel_bar_why
+
+```
+
+Most of the movies that didn't pass had female characters but they didn't talk to one another. About 500 movies met this criteria. Another 200 movies had female characters who talked to one another, but they talked about the male characters.
+
+### Budget, earnings, and the Bechdel test
+
+Let's return to the budget and earnings data. What sort of budgets do passing versus failing movies get? What sort of earnings do they make?
+
+```{r bechdel_vs_budget}
+
+bechdel_vs_budget <-
+  ggplot(data = bechdel, aes(x = binary, y = budget)) +
+geom_boxplot()
+
+bechdel_vs_budget
+
+```
+
+The median budgets aren't too far off, but the distributions are different -- there is a longer "high budget" tail for the failing movies.
+
+What about the different ways a movie can fail the test?
+
+```{r bechdel_why_vs_budget}
+
+bechdel_why_vs_budget <-
+  ggplot(data = bechdel, aes(x = clean_test, y = budget)) +
+geom_boxplot()
+
+bechdel_why_vs_budget
+
+```
+
+Again, the median values aren't too different, but the distributions are. There is one outlier for the "only talk about men" category that had a very high budget. 
+
+What about earnings? Are movies that pass making more or less money than movies that fail?
+
+```{r bechdel_vs_earnings}
+
+bechdel_vs_earnings <-
+  ggplot(data = bechdel, aes(x = binary, y = domgross)) +
+geom_boxplot()
+
+bechdel_vs_earnings
+
+```
+
+Movies that pass have slightly lower median domestic earnings.
+
+What about the different ways a movie can fail the test?
+
+```{r bechdel_why_vs_earnings}
+
+bechdel_why_vs_earnings <-
+  ggplot(data = bechdel, aes(x = clean_test, y = domgross)) +
+geom_boxplot()
+
+bechdel_why_vs_earnings
+
+```
+
+The median domestic earnings wasn't much different between these categories. Movies with no women are a bit lower. That one movie where the female characters only talk about the male characters did very well. (What movie is that? We'll talk later about labeling specific points in a plot.)
+
+Overall, movies that fail are making a bit more money than those that pass. Are they making enough to offset their larger budgets? To see this, we'll add several geometric objects to the same plot.
+
+First, we'll color the points by whether the movie passed or failed the Bechdel test.
+
+```{r budget_vs_domestic_bechdel}
+
+budget_vs_domestic_bechdel <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross, color = binary)) +
+    geom_point(alpha = 0.2)
+
+budget_vs_domestic_bechdel
+
+```
+
+There's not really a clear pattern. Let's add some regression lines for each group (pass versus fail) to see if those make it clearer.
+
+The geom_smooth object is a really flexible object to add all sorts of lines -- straight lines, running averages. Using the *method = "lm"* option (where lm stands for linear model) gives us a straight line.
+
+```{r budget_vs_domestic_bechdel_lines}
+
+budget_vs_domestic_bechdel_lines <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross, color = binary)) +
+    geom_point(alpha = 0.2) +
+    geom_smooth(method = "lm", fill = NA)
+
+budget_vs_domestic_bechdel_lines
+
+```
+
+So it looks like movies that pass are overperforming relative to movies that fail. Give them the same budget (x axis) and the passing movies earn more. But this is based on a straight line. Maybe the relationship between budget and earnings isn't so straight(-forward). Let's try a running average or loess smooth by using *method = loess*.
+
+```{r budget_vs_domestic_bechdel_loess}
+
+budget_vs_domestic_bechdel_loess <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross, color = binary)) +
+    geom_point(alpha = 0.2) +
+    geom_smooth(method = "loess", fill = NA)
+
+budget_vs_domestic_bechdel_loess
+
+```
+
+Now the conclusion switches! Movies that pass the Bechdel test that are given (relatively) higher budgets are overperforming for budgets between 10 million and 20 million, but **way** underperforming for higher budgets.
+
+But wait! There's more!
+
+There aren't as many passing movies that are given those higher budgets. How certain are we about those lines?
+
+Removing the "fill = NA" option produces standard errors of prediction for each line. These are based on (among other things) how many points the line is based on in that area. Fewer points = less confident = wider standard errors. 
+
+```{r budget_vs_domestic_bechdel_loess_se}
+
+budget_vs_domestic_bechdel_loess_se <-
+  ggplot(data = bechdel, aes(x = budget, y = domgross, color = binary)) +
+    geom_point(alpha = 0.2) +
+    geom_smooth(method = "loess")
+
+budget_vs_domestic_bechdel_loess_se
+
+```
+
+Notice two things. One, there are overall fewer movies with the highest budgets (> 30 million), so we're less confident about those movies in general. Second, there are few passing movies with budgets over 20 million and **no** passing movies with budgets over 30 million, so it's hard to be confident about those budget levels.
+
+### Some options for further analysis
+
+- Include both domestic and international earnings
+
+- Look at different subsets of movies separately
+
+  - Only big budget movies
+  
+  - Only small budget movies
+  
+  - Only movies since 2000
+  
+- Use the more fine-grained Bechdel test measurements instead of just pass/fail
+
+- Probably lots more 
+
+## See fivethirtyeight's analysis here:
+
+[https://fivethirtyeight.com/features/the-dollar-and-cents-case-against-hollywoods-exclusion-of-women/](https://fivethirtyeight.com/features/the-dollar-and-cents-case-against-hollywoods-exclusion-of-women/)
+
+
+
+
+
+
+

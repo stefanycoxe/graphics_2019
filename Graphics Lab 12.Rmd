@@ -1,0 +1,243 @@
+---
+title: "Graphics week 12 lab"
+author: "Stefany Coxe"
+date: "11/14/2019"
+output:
+  html_document: default
+---
+
+```{r setup, echo = TRUE}
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(gapminder)
+library(plotly)
+library(gganimate)
+library(gifski)
+library(png)
+```
+
+# Animation
+
+## plotly
+
+### The **ggplotly()** and **ggplot()** way
+
+The easiest way to use **plotly** is to make your plot in **ggplot** and then wrap that object in the **ggplotly()** function. 
+
+Notice the new argument here, `frame = year` in the **aes()** function.
+
+```{r}
+
+data(gapminder)
+
+#glimpse(gapminder)
+
+plot1 <- ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp, 
+                                      color = continent, frame = year)) +
+  geom_point(aes(size = pop, frame = year, ids = country)) +
+  scale_x_log10()
+
+ggplotly(plot1)
+
+```
+
+### The **plot_ly()** way
+
+- This code gives a bunch of warnings, which I've suppressed using `warning = FALSE` as an option for each **plot_ly** chunk.
+
+```{r, warning = FALSE}
+
+plot2 <- 
+plot_ly(data = gapminder, x = ~gdpPercap, y = ~lifeExp, size = ~pop, 
+          text = ~country, hoverinfo = "text") %>%
+  layout(xaxis = list(type = "log")) %>%
+  add_markers(color = ~continent, frame = ~year, ids = ~country)
+
+plot2
+
+```
+
+You can see how the code is similar to **ggplot**. There are a few key differences.
+
+1. No overall "aesthetic" argument
+
+2. Variable names are preceded by a tilde ( ~ )
+
+3. Pipes ( %>% ) rather than pluses ( + ) to add elements
+
+4. Default colors and overall layout are a bit different from **ggplot**
+
+Using the **plot_ly** function also lets you make modifications to the animation and related structures using the **animation_opts()**, **animation_button()**, and **animation_slider()** functions.
+
+#### animation_opts
+
+```{r, warning = FALSE}
+
+plot2 %>%
+  animation_opts(frame = 1000, easing = "elastic", redraw = FALSE)
+
+```
+
+- `frame` = number of milliseconds between changes (default = 500)
+
+- `easing` = type of change between frames (default = linear)
+
+  - `linear` gives a smooth transition
+  
+  - `elastic` gives a little bounce at each stop
+
+  - There are a *ton* of options for transitions. See here under "easing": [https://github.com/plotly/plotly.js/blob/master/src/plots/animation_attributes.js](https://github.com/plotly/plotly.js/blob/master/src/plots/animation_attributes.js)
+  
+- `redraw` = whether to compltely re-draw the plot for each frame (default = TRUE)
+
+  - TRUE will require a lot more resources than FALSE
+  
+  - Only really need to use TRUE if there are objects that need to change with each frame but aren't being animated
+  
+#### animation_button and animation_slider
+
+```{r, warning = FALSE}
+
+plot2 %>%
+  animation_button(x = 1, xanchor = "right", y = 0, yanchor = "bottom") %>%
+  animation_slider(currentvalue = list(prefix = "YEAR ", font = list(color="red")))
+```
+
+- `x = 1` puts the button on the right side of the plot. Changing it to 0 will put the button on the left side of the plot. Changing it to 2 will put the button in another section of the screen to the right of the plot.
+
+- `y = 0` puts the button at the bottom of the plot. Changing it to 1 will put the button at the top of the plot.
+
+- `xanchor` and `yanchor` = where to anchor the button. Here, flush with the right bottom of the plot.
+
+- `currentvalue` add a label with the current value of the frame variable. Here, the font has also been changed to red. You can add a `prefix` and/or `affix` to the frame value.
+
+#### Continuous (numeric) versus categorical (factor) frames
+
+Different types of frame variables are handled differently
+
+- Numeric variable: numerical order 
+
+- Character variable: alphabetical order 
+
+- Factor variable: factor order 
+
+It makes sense to have a transition between frames for a continuous frame variable (like year). But it doesn't make much sense to animate the transition between categorical variables (like continent).
+
+First, let's make the `continent` variable into a factor variable. We'll order the factors in terms of lowest to highest mean life expectancy. The `tapply` function applies the "mean" function across all continents. This is similar to how we've used `group_by()` and `summarize()` before.
+
+```{r}
+meanLife <- with(gapminder, tapply(lifeExp, INDEX = continent, mean))
+gapminder$continent <- factor(
+  gapminder$continent, levels = names(sort(meanLife))
+)
+```
+
+Now that continent is a factor with the correct order, let's use it as a frame variable.
+
+```{r, warning = FALSE}
+gapminder %>%
+plot_ly(x = ~gdpPercap, y = ~lifeExp, size = ~pop, frame = ~continent,
+          text = ~country, hoverinfo = "text") %>%
+  layout(xaxis = list(type = "log")) %>%
+  add_markers(data = gapminder, frame = ~continent) %>%
+  hide_legend() %>%
+  animation_opts(frame = 1000, transition = 0, redraw = FALSE)
+```
+
+Notice that the data and frame as specified in the `add_markers` function. This makes the markers change on each frame. We didn't have to do that for **ggplot** but we do here.
+
+In `animation_opts`, the `transition` option is set to 0. This means that the change happens instantly rather than gradually. This is a good choice for categorical frames -- there's no reason to smoothly transition from the plot for Africa to Asia, as we did with year.
+
+#### Building up the points
+
+A very compelling way to show both *change* and *context* is to have **ALL** points in the plot (with reduced alpha), with the animated points on top.
+
+```{r, warning = FALSE}
+gapminder %>%
+plot_ly(x = ~gdpPercap, y = ~lifeExp, size = ~pop, 
+          text = ~country, hoverinfo = "text") %>%
+  
+  layout(xaxis = list(type = "log")) %>%
+  
+  add_markers(color = ~continent, showlegend = F,
+    alpha = 0.2, alpha_stroke = 0.2) %>%
+  
+  add_markers(color = ~continent, frame = ~year, ids = ~country) %>%
+  
+  animation_opts(1000, redraw = FALSE)
+```
+
+The first `add_markers` function shows all points with reduced alpha. Notice that it **does not** include a `frame` option, meaning that it isn't changing with each frame.
+
+The second `add_markers` function shows only the points for that particular frame. 
+
+## gganimate
+
+A basic plot of GDP per capita and life expectancy, colored by continent and animated across years.
+
+```{r}
+plot3 <- ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp, 
+                                      size = pop, color = continent)) +
+  geom_point() +
+  scale_x_log10() +
+  transition_time(year)
+
+plot3
+```
+
+`transition_time` is for continuous numeric frame variables, like year. 
+
+### Animation style
+
+We can change the way the transition looks using the **ease_aes** function.
+
+```{r}
+plot3 +
+  ease_aes('elastic-in')
+```
+
+The default is `linear`. The `elastic` option is similar to the `elastic` option from **plot_ly**. The `in` and `out` options tell **gganimate** whether to use this type of movement on the way in, the way out, or both. For example, using it for both in and out of a frame, use `elastic-in-out`.
+
+### Categorical frame variables 
+
+Use `transition_states` instead of `transition_time` for categorical frame variables. `transition_states` has 1 required argument and 2 optional arguments (shown here).
+
+Required:
+
+- `continent` is the frame variable, or what changes
+
+Optional:
+
+- `transition_length` is how long (in seconds) the transition lasts. I made this 0 so that it instantly changes.
+
+- `state_length` is how long (in seconds) the animation stays on a given frame. I made this 2 so each frame stays for 2 seconds.
+
+```{r}
+plot4 <- ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp, 
+                                      size = pop, color = continent)) +
+  geom_point() +
+  scale_x_log10() +  
+  transition_states(continent,
+                    transition_length = 0,
+                    state_length = 2)
+plot4
+```
+
+### Label for frame
+
+You can add a label indicating which frame is currently being shown.
+
+```{r}
+plot4 + 
+  ggtitle('Now showing continent: {closest_state}',
+          subtitle = 'Frame {frame} of {nframes}')
+
+```
+
+This only works with categorical frames and `transition_states`.
+
+The default number of frames is 100. The default number of frames per second is 10. Each of these can be modified using the **nframes** and **fps** functions, respectively.
+
+

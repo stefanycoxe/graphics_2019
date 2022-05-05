@@ -1,0 +1,130 @@
+---
+title: "Graphics week 6 lab"
+author: "Stefany Coxe"
+date: "10/03/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("Stat2Data")
+#install.packages("gapminder")
+#install.packages("jtools")
+#install.packages("skimr")
+#install.packages("visdat")
+#install.packages("DataExplorer")
+#install.packages("inspectdf")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(gapminder)
+library(jtools)
+library(skimr)
+library(visdat)
+library(DataExplorer)
+library(inspectdf)
+```
+
+# Data
+
+We are going to use the **MathPlacement** dataset from the **Stat2Data** package. 
+
+[https://cran.r-project.org/web/packages/Stat2Data/Stat2Data.pdf](https://cran.r-project.org/web/packages/Stat2Data/Stat2Data.pdf)
+
+There is information on 2500+ college students on their math placement exam scores, as well as a variety of other math-related and other academic information on them: math SAT, math ACT, adjusted HS GPA, etc.
+
+## Objectives of this EDA
+
+We want to predict whether students were successful in the math course they took. This is reflected by two different variables: *Grade* and *CourseSuccess*. (You can look at one or the other, or both, depending on how much time you have.) It seems reasonable that their success will be related to multiple things, including:
+
+- General academic success (*Rank*, *GPAadj*)
+- Math ability (*PSATM*, *SATM*, *ACTM*, *PlcmtScore*)
+- Whether they took the course that was recommended based on their placement score (*TooHigh* and *TooLow*)
+
+The four main objectives of EDA are:
+
+1. **Suggest hypotheses** about the causes of observed phenomena
+
+2. **Assess assumptions** on which statistical inference will be
+based
+
+3. Support the **selection of appropriate statistical tools** and
+techniques
+
+4. Provide a basis for **further data collection** through surveys or
+experiments
+
+Keep these four points in mind while exploring the dataset. Use the tools we've already covered in class (e.g., ggplot, summarize, glimpse, head) as well as the new, EDA-specific packages to explore the dataset. Remember that some of the plotting tools (such as heatmaps) work really well for *large* datasets like this one, while point plots may not be helpful without some modifications (i.e., alpha adjustment).
+
+```{r dataset}
+data(MathPlacement)
+
+glimpse(MathPlacement)
+
+```
+
+## Explore the data
+
+Here are some examples of questions that you can try to answer for each objective. These are not exhaustive, but use them as a starting point.
+
+### 1. Suggest hypotheses
+
+What variables are related to one another?
+
+Are those relationships linear or not? (Linear relationships show up in correlation coefficients, but you'll need to make plots to see nonlinear relationships.)
+
+### 2. Assess assumptions
+
+Are relationships homoscedastic or not? (If they're not, that could suggest an interaction or another nonlinear relationship.)
+
+### 3. Select appropriate statistical tools
+
+What does the distribution of the outcome look like? 
+
+If you run a regression, are the residuals normally distributed and conditionally normal? You can extract the residuals from the lm() function and use them in plots: [http://www.r-tutor.com/elementary-statistics/simple-linear-regression/residual-plot](http://www.r-tutor.com/elementary-statistics/simple-linear-regression/residual-plot)
+
+Can you use linear regression? 
+
+Do you need to use logistic regression for binary outcomes [https://stats.idre.ucla.edu/r/dae/logit-regression/](https://stats.idre.ucla.edu/r/dae/logit-regression/) instead? 
+
+Or maybe ordinal logistic regression for ordered categories [https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/](https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/)?
+
+### 4. Further data collection
+
+What are some potentially confounding variables that weren't collected? You can often see that there **are** confounding variables from the plots -- e.g., heteroscedasticity that's not related to an observed variable. But you'd have to think about what these un-measured variables might be.
+
+## Conclusions
+
+One of the nice things about EDA is that you're often visually inspecting things, so you typically won't include a bunch of predictors with very small relationships -- very small relationships don't **look** like a relationship at all. So you might miss small effects, but you're generally not including small, spurious relationships (unless you have a **gigantic** dataset or **way too many** potential predictors.) 
+
+- Put together a regression model that includes the the predictors and relationships (i.e., interactions) that you selected based on your EDA. Interpret the results, **but since this is an EDA**, focus on effect sizes rather than p-values. What things help determine how well someone does in a college math course?
+
+## Addendum: Splitting the dataset
+
+We shouldn't really draw inference from EDA that was done on the entire sample. An alternative is to split the dataset into a "train" dataset where we do EDA and develop hypotheses and a "test" dataset where we test the hypotheses. There are actually several different ways to do this.
+
+[https://stackoverflow.com/questions/17200114/how-to-split-data-into-training-testing-sets-using-sample-function](https://stackoverflow.com/questions/17200114/how-to-split-data-into-training-testing-sets-using-sample-function)
+
+Here is one way.
+
+```{r data_split}
+
+
+set.seed(31415)   # Set a seed so the same split happens every time you run
+# Select 75% of the sample as the "train" data
+# The remainder will be the "test" data
+sample <- sample.int(n = nrow(MathPlacement), size = floor(.75*nrow(MathPlacement)), replace = F)
+train <- MathPlacement[sample, ]
+test  <- MathPlacement[-sample, ]
+
+#train
+#test
+
+```
+
+Then you do your EDA on the "train" dataset and test the hypotheses on the "test" dataset.

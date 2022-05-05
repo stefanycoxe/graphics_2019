@@ -1,0 +1,380 @@
+---
+title: "Graphics week 7 lab"
+author: "Stefany Coxe"
+date: "10/10/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("Stat2Data")
+#install.packages("gapminder")
+#install.packages("jtools")
+#install.packages("skimr")
+#install.packages("nullabor")
+#install.packages("interactions")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(gapminder)
+library(jtools)
+library(skimr)
+library(nullabor)
+library(interactions)
+```
+
+# Determining statistical significance visually
+
+The line-up method (implemented in the **nullabor** package) lets you compare a plot with a significant effect to a variety of plots with no effect. Our job is to detect the plot with an effect -- it should **look** extreme, which corresponds to an extreme observed test statistic. This is a visual version of a re-sampling test (e.g., permutation test, bootstrap); a variable is randomly re-ordered to remove the relationship it has with other variables.
+
+## Get attuned to no relationship with rorschach()
+
+The **rorschach** function creates a bunch of datasets that are similar to your observed data, only with no effect. This code creates n datasets based on the variable and dataset you specify, with a specified probability of including the real data. 
+
+The **null_permute** function creates no relationship based on the variable you specify, so make sure that's a variable you're going to use.
+
+You might notice that this takes a while to run (only a few seconds, but longer than usual). That's because of the re-sampling -- it takes time.
+
+```{r rorschach}
+data(gapminder)
+gapminder2002 <- gapminder %>% filter(year == 2002)
+
+d <- rorschach(null_permute("gdpPercap"), gapminder2002, n = 20, p = 0)
+#d
+ggplot(data=d, aes(x=lifeExp, y=gdpPercap)) + geom_point() + scale_y_log10() + facet_wrap(~ .sample)
+```
+
+### Print the position of the real data (the "pos" or positive)
+
+The **attr()** function will tell you which is the real one.
+
+```{r real_position_ror}
+
+attr(d, "pos")
+
+```
+
+There's not a relationship in any of these, hence `NULL`. It's just to get your eyes more accustomed to what no relationship looks like.
+
+## Visually determine significance
+
+The **lineup** function creates n-1 plots with no relation, plus 1 plot with the observed relationship.
+
+```{r lineup}
+L <- lineup(null_permute("gdpPercap"), gapminder2002)
+
+ggplot(data=L, aes(x=lifeExp, y=gdpPercap)) + geom_point() + scale_y_log10() + facet_wrap(~ .sample)
+```
+
+Can you spot the real data? I expect yes; this is a very obvious relationship.
+
+### Print the position of the real data
+
+The **attr()** function will tell you which is the real one.
+
+```{r real_position}
+
+attr(L, "pos")
+
+```
+
+There is also an option to encrypt information about the sample number and only reveal it by typing in a special code. Perhaps useful for studies? Copy the line starting with `## decrypt` above the plots into Console to see the secret.
+
+### Calculate a p-value based on how many people were able to pick the real data
+
+The **pvisual** function will give the probability of x or more independent observers picking the data plot, assuming that there is no difference between the data plot and the null plots. 
+
+There are a lot of options available, depending on your exact line-up design. See documenation for more details: [https://www.rdocumentation.org/packages/nullabor/versions/0.3.5/topics/pvisual](https://www.rdocumentation.org/packages/nullabor/versions/0.3.5/topics/pvisual)
+
+Let's say that I showed the above set of plots to 50 people and that 8 of them were able to find the real data.
+
+```{r pvalue}
+
+pvisual(8, 50)
+
+```
+
+The second p-value is calculated using the binomial distribution. The first p-value is simulated, which accounts for any violations from the assumptions of the binomial distribution, like correlation between plots or observers.
+
+There are some options available for this function. You can specify the number of plots that were viewed -- the default is 20, which is also default for the **lineup** function.
+
+More people picking the plot results in smaller p-values. So here, only a handful of people need to detect the real data to say it's visually extreme enough. 
+
+### Short presentation about the **nullabor** package
+
+[https://www.dicook.org/files/nycr/slides](https://www.dicook.org/files/nycr/slides)
+
+# Presenting statistical significance visually
+
+Maybe you've done some statistical analysis and you want to present your results. Or maybe you haven't and you just want to present your results in a way that allows for statistical inference from the plots.
+
+Here, I'll demonstrate how to create confidence intervals as error bars using *theoretical* confidence intervals based on the t-distribution. But if you have confidence intervals from other sources, such as from bootstrapping or Monte Carlo simulation, you can use those values instead.
+
+## CIs for between-subjects group differences
+
+I'm going to use the **FirstYearGPA** dataset in the **Stat2Data** package. We have used this dataset previously. I'll use the between-subjects variables *FirstGen* and *GPA*.
+
+```{r summ_gpa}
+data(FirstYearGPA)
+summ_gpa <- FirstYearGPA %>% group_by(FirstGen) %>% 
+summarize(group_n = n(), 
+  GPA_mean = mean(GPA), 
+  GPA_sd = sd(GPA), 
+  error = qt(0.975,df = group_n-1) * GPA_sd/sqrt(group_n))
+summ_gpa
+```
+
+Notice that the two groups are pretty unequal in size. That will impact the width of the CIs -- larger sample = smaller CI. 
+
+```{r CI_error}
+CI_error <- 
+  ggplot(data = summ_gpa, 
+          aes(x = as.factor(FirstGen), y = GPA_mean)) +
+  geom_point(size = 2) +
+  geom_errorbar(data = summ_gpa,
+                aes(x = as.factor(FirstGen), 
+                  ymin = GPA_mean - error, 
+                  ymax = GPA_mean + error),
+                width = 0.5) +  
+  geom_jitter(data = FirstYearGPA, 
+             aes(x = as.factor(FirstGen), 
+                 y = GPA), 
+             color = "blue", alpha = 0.5)
+CI_error
+
+```
+
+The error bars are much smaller for the larger group, as we expected. 
+
+It looks like the error bars overlap the tiniest bit. **What's your estimate of the p-value?** 
+
+Let's compare that to a traditional analysis.
+
+```{r compare}
+model1 <- lm(data = FirstYearGPA, GPA ~ FirstGen)
+
+summary(model1)$coefficients
+```
+
+The p-value is .02, which is about what we expect. The bars overlap a tiny bit, so p > .01, but they're not overlapping halway, as we would expect for p = .05.
+
+## CIs for continuous relationships
+
+For continuous relationships, we don't create discrete error bars in the same way, but **geom_smooth** produces a *smoothed* 95% (default) CI of predicted values. This is by default; you will get this CI unless you specify `se = FALSE`.
+
+We can compare the overlap in CIs for multiple lines in the same way that we did for discrete groups. Where the CIs overlap about halfway, the lines are different at p<.05.  Where the CIs don't overlap at all, the lines are different at p<.01. 
+
+I'll use continuous outcome *GPA*, continuous predictor *HSGPA*, and categorical moderator *White*.
+
+```{r interaction_plot}
+hsgpa_x_white <- 
+  ggplot(data = FirstYearGPA, 
+         aes(x = HSGPA, y = GPA, 
+             color = as.factor(White))) +
+  geom_point() +
+  geom_smooth(method = lm)
+hsgpa_x_white
+```
+
+These two groups differ at most HS GPA values, but are (statistically) the same at higher HS GPA values (above about 3.75). 
+
+How does this compare to the statistical effects we'd find in a model with an interaction (HSGPA x White interaction)?
+
+```{r interaction}
+model2 <- lm(data = FirstYearGPA, GPA ~ HSGPA + White + HSGPA*White)
+
+summary(model2)
+```
+
+(This is not the only way to specify an interaction, but it's most similar to what you've seen before.)
+
+### Johnson-Neyman method for interactions
+
+One method of testing simple slopes (e.g., the two group slopes in the plot above) is the Johnson-Neyman method. This gives you a range of the predictor (HSGPA) for which the groups are different. This is implemented in the **johnson_neyman** function of the **interactions** package. More info here: [https://interactions.jacob-long.com/reference/johnson_neyman.html](https://interactions.jacob-long.com/reference/johnson_neyman.html)
+
+Let's use this on the model to see how it compares. You specify the model object (created above), the predictor (which is the group), and the moderator (which appears on the X axis).
+
+```{r jn}
+
+johnson_neyman(model = model2, pred = White,
+  modx = HSGPA)
+
+```
+
+This plot and accompanying text are consistent with the previous plot. 
+
+The plot shows the difference between the two groups, across values of HSGPA. The difference is large (about 0.75 GPA points) for HSGPA = 2.0. That doesn't actually exist in the dataset -- see the bold horizonal black line for observed values. 
+
+The difference between groups decreases as HSGPA increases, becoming no longer significant around HSGPA = 3.82. (My eyeball estimate was 3.75.)
+
+## CIs for repeated measures
+
+I'm going to use the **gapminder** dataset in the **gapminder** package. We have used this dataset previously.
+
+I'll use the repeated-measures observations of life expectancy (*lifeExp*) for all years.
+
+First, let's plot the CIs we would get if we (wrongly) treated everything like it was between-subjects.
+
+```{r gap_between}
+data(gapminder)
+glimpse(gapminder)
+summ_gap <- gapminder %>% group_by(year) %>% 
+summarize(group_n = n(), 
+  life_mean = mean(lifeExp), 
+  life_sd = sd(lifeExp), 
+  error = qt(0.975,df = group_n-1) * life_sd/sqrt(group_n))
+summ_gap
+
+```
+There is one mean and one SD for each year. We'll use those to plot the life expectancy over time with CIs.
+
+```{r gap_wrongerror}
+gap_wrongerror <- 
+  ggplot(data = summ_gap, 
+          aes(x = as.factor(year), y = life_mean)) +
+  geom_point(size = 2) +
+  geom_errorbar(data = summ_gap,
+                aes(x = as.factor(year), 
+                  ymin = life_mean - error, 
+                  ymax = life_mean + error)) +
+  labs(title = "Means with naive (i.e., between-subjects) confidence intervals")
+gap_wrongerror
+
+```
+
+Ok, that looks normal. **Is there something wrong with it?**
+
+Let's add the raw data for each country to the plot.
+
+```{r gap_wrongerror_withdata}
+gap_wrongerror_withdata <- 
+  ggplot(data = summ_gap, 
+          aes(x = as.factor(year), y = life_mean)) +
+  geom_point(size = 2) +
+  geom_errorbar(data = summ_gap,
+                aes(x = as.factor(year), 
+                  ymin = life_mean - error, 
+                  ymax = life_mean + error)) +  
+  geom_line(data = gapminder,
+             aes(x = as.factor(year), 
+                 y = lifeExp,
+                 group = country), 
+             color = "blue", alpha = 0.5) +
+  labs(title = "Means with naive (i.e., between-subjects) confidence intervals plus raw data")
+gap_wrongerror_withdata
+
+```
+
+Now we can see that those CIs don't reflect the **HUGE** between country variability. We need to get rid of that to get an idea of what's really going on.
+
+To do that, we need to calculate:
+
+1. Grand mean of lifeExp across the entire sample  
+2. Country mean of lifeExp for each country
+
+Then, we'll calculate a "normalized" version of life expectancy that removes those sources of variance, using the equation:
+
+$X_{ij} - (\bar{X}_{countryi} - \bar{X}_{grand})$
+
+```{r normalize}
+
+gap_means <- gapminder %>%
+
+# grand mean
+
+mutate(grand_mean = mean(lifeExp)) %>%
+
+# country mean
+
+group_by(country) %>%
+
+mutate(country_mean = mean(lifeExp)) %>%
+
+# normalized life expectancy
+
+ungroup() %>%
+  
+mutate(norm_life = lifeExp - (country_mean - grand_mean))
+
+# check the dataset
+
+glimpse(gap_means)
+
+```
+
+(Note: If you run mixed models, you may use these same methods. You calculate the grand mean and cluster-level mean for each cluster. Then you can include them as predictors and/or use them to grand mean center or group mean center the outcome. Same method -- which is not surprising because mixed models are often used for repeated-measures models like this.)
+
+Now, let's plot the normalized values.
+
+```{r gap_norm}
+gap_norm <- 
+  ggplot(data = gap_means, 
+          aes(x = as.factor(year), y = norm_life)) +
+  geom_line(data = gap_means,
+             aes(x = as.factor(year), 
+                 y = norm_life,
+                 group = country)) +
+  labs(title = "Normalized data (country mean and grand mean removed)")
+gap_norm
+
+```
+
+The pattern over time is the same for each country. We've just removed the between-country variability -- each country's overall mean is equal to the grand mean.
+
+```{r summ_norm}
+summ_norm <- gap_means %>% group_by(year) %>% 
+summarize(group_n = n(), 
+  life_norm_mean = mean(norm_life), 
+  life_norm_sd = sd(norm_life), 
+  error_norm = qt(0.975,df = group_n-1) * life_norm_sd/sqrt(group_n))
+summ_norm
+```
+
+Now here's the tricky bit. We want to use the **original data** with the **normalized confidence intervals**. So we'll call on two different datasets in the same figure.
+
+```{r gap_righterror}
+gap_righterror <- 
+  ggplot(data = summ_gap) +
+  geom_point(data = summ_gap, aes(x = as.factor(year), y = life_mean), size = 2) +
+  geom_errorbar(data = summ_norm,
+                aes(x = as.factor(year),
+                  ymin = life_norm_mean - error_norm,
+                  ymax = life_norm_mean + error_norm)) +
+  labs(title = "Means with correct (i.e., within-subjects) confidence intervals")
+gap_righterror
+
+```
+
+And with the observed data overlaid.
+
+```{r gap_righterror_plusdata}
+gap_righterror_plusdata <- 
+  ggplot(data = summ_gap) +
+  geom_point(data = summ_gap, aes(x = as.factor(year), y = life_mean), size = 2) +
+  geom_errorbar(data = summ_norm,
+                aes(x = as.factor(year),
+                  ymin = life_norm_mean - error_norm,
+                  ymax = life_norm_mean + error_norm)) +
+  geom_line(data = gapminder,
+             aes(x = as.factor(year), 
+                 y = lifeExp,
+                 group = country), alpha = 0.2) +
+  labs(title = "Means with correct (i.e., within-subjects) confidence intervals plus original data")
+gap_righterror_plusdata
+
+```
+
+Notice that the CIs for a within-subjects effect are **much smaller** than those for a between-subjects effect. I **really** want you to remember this because it means that within-subjects designs have *higher power* than between-subjects designs because we can *remove error variance* (bad) due to individuals / countries / whatever unit being similar to themselves over time.
+
+
+
+
+
+
+
+

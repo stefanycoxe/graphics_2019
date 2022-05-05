@@ -1,0 +1,761 @@
+---
+title: "Graphics week 5 lab"
+author: "Stefany Coxe"
+date: "9/26/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=TRUE}
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("Stat2Data")
+#install.packages("RColorBrewer")
+#install.packages("gapminder")
+#install.packages("jtools")
+#install.packages("viridis")
+#install.packages("xkcd")
+#install.packages("ggthemes")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(RColorBrewer)
+library(gapminder)
+library(jtools)
+library(viridis)
+library(xkcd)
+library(ggthemes)
+set.seed(31415)
+```
+
+# Manipulating data
+
+The **dplyr** package has many options for manipulating data. I'm going to discuss just a few key ones that you will be able to use widely, but for a full listing, see the documentation: [https://dplyr.tidyverse.org/reference/](https://dplyr.tidyverse.org/reference/)
+
+## dplyr verbs: summarize()
+
+- Reduce multiple values down to a single summary value
+
+```{r r_summarize}
+#glimpse(gapminder)
+gapminder_summary <- gapminder %>% 
+  summarize(avg_gdp = mean(gdpPercap))
+#glimpse(gapminder_summary)
+gapminder_summary
+```
+
+We will use the round function to round the number down some to enter in text. There are two arguments for the function -- the value you want to round and how many significant digits you want to keep.
+
+This number, `r round(gapminder_summary$avg_gdp[1], 2)`, is the average GDP across **all** countries and **all** timepoints.
+
+We could also use the summarize function along with the group_by command to get an average for each country across all timepoints.
+
+```{r summarize2}
+summ_gdp_by_country <- gapminder %>%  
+    group_by(country) %>%  
+    summarize(mean_gdp = mean(gdpPercap))
+summ_gdp_by_country
+```   
+
+There are 142 entries here -- one for each country. I can print out just the GDP for Angola, which is the 4th entry, using
+
+r round(summ_gdp_by_country$mean_gdp[4], 2)
+
+The mean GDP of Angola is `r round(summ_gdp_by_country$mean_gdp[4], 2)`.
+
+## dplyr verbs: mutate()
+
+- Add or modify variables in the dataset; create new ones that are functions of existing ones
+
+```{r mutate}
+#glimpse(gapminder)
+gapminder_totalgdp <- gapminder %>% 
+  mutate(totalgdp = gdpPercap * pop)
+#glimpse(gapminder_totalgdp)
+gapminder_totalgdp
+```
+
+The original gapminder dataset has 6 variables. There are now 7 variables -- the *additional* variable is called "totalgdp" and contains the total GDP for each country.
+
+## dplyr verbs: select()
+
+- Pick **variables** (columns) based on their names
+
+```{r select}
+#glimpse(gapminder)
+gapminder_justgdp <- gapminder %>% 
+  select(gdpPercap)
+#glimpse(gapminder_totalgdp)
+gapminder_justgdp
+```
+
+That's not super useful, since now I only have GDP and don't know which country or year it goes with. You can select multiple variables in some different ways.
+
+Say that I know I want to look at country, continent, year, and GDP. I can use the c (concatenate) function to ask for a list of variables.
+
+```{r select2}
+#glimpse(gapminder)
+gapminder_multiple <- gapminder %>% 
+  select(c(country, continent, year, gdpPercap))
+#glimpse(gapminder_totalgdp)
+gapminder_multiple
+```
+
+You can also use other functions within the select function (like we already just used c()). For instance, if you can't remember if the population variable is "pop" or "population" (and you're too lazy to just glimpse the dataset...), you can use the starts_with function.
+
+```{r select3}
+#glimpse(gapminder)
+gapminder_multiple2 <- gapminder %>% 
+  select(c(country, continent, year, gdpPercap, starts_with("pop")))
+#glimpse(gapminder_totalgdp)
+gapminder_multiple2
+```
+
+Now you have population variable in the dataset without having to use the whole name. A better use of this function is if you have several variables that all start the same (e.g., PLS8, PLS9, PLS10, PLS11, etc.) and you want to include all of them. You can use select(starts_with("PLS")). The similar function "ends_with" does the same thing, only with the end of the variable name.
+
+You can also use select to re-order variables in the dataset and do a few other things. See [https://dplyr.tidyverse.org/reference/select.html](https://dplyr.tidyverse.org/reference/select.html) for more details.
+
+
+## dplyr verbs: filter()
+
+- Pick **cases** (rows) based on their values
+
+We have already used filter in the past. The filter function needs other functions / operators to work, such as
+
+- == (equal to)
+
+- != (not equal to)
+
+- & (and)
+
+- \| (or)
+
+- %in% (in the specified list)
+
+Select only data from the year 2002:
+
+```{r filter}
+gapminder_2002 <- gapminder %>%  
+    filter(year == 2002)
+gapminder_2002
+```
+
+Select only data from the year 2002 or the year 1997:
+
+```{r filter2}
+gapminder_2002_1997 <- gapminder %>%  
+    filter((year == 2002) | (year == 1997))
+gapminder_2002_1997
+```
+
+Select data from Asia, Europe, and Africa only:
+
+```{r filter3}
+gapminder_Asia_Europe_Africa <- gapminder %>%  
+    filter(continent %in% c("Asia", "Europe", "Africa"))
+gapminder_Asia_Europe_Africa
+```
+
+## dplyr verbs: arrange()
+
+- Change the ordering of the rows (i.e., sort the data)
+ 
+```{r arrange}
+gapminder_sortby_gdp <- gapminder %>%  
+    arrange(gdpPercap)
+gapminder_sortby_gdp
+```
+
+The default is to sort in **ascending** order. You can use the desc function to change that.
+
+```{r arrange2}
+gapminder_sortby_gdp_desc <- gapminder %>%  
+    arrange(desc(gdpPercap))
+gapminder_sortby_gdp_desc
+```
+
+This last dataset is ordered in descending order of GDP per capita.
+
+# Themes, labels, annotations
+
+I'm going to make a fairly involved plot so that we can try out some different appearance changes. I'm going to call it "base_plot" and then we'll just add new things to that base plot, instead of re-creating it again every time. I'm going to include a good title and axis labels, so they'll show up throughout. Basically, anything that you know you'll want to keep the same can be in the base plot.
+
+```{r plot}
+data("FirstYearGPA")
+#glimpse(FirstYearGPA)
+base_plot <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA, color = as.factor(Male))) +
+  geom_point() +
+  labs(title = "First year college GPA versus high school GPA, \n grouped by student gender", 
+       x = "High school GPA", 
+       y = "First year college GPA", 
+       color = "Gender") + 
+  scale_color_hue(labels = c("Female", "Male"))
+base_plot
+  
+```
+
+We've talked about how this plot is not particularly attractive, what with the grey background and gridlines. Let's look at some other basic themes for it.
+
+## Changing the theme
+
+Black and white theme:
+
+```{r plot_bw}
+base_plot + theme_bw()
+```
+
+Minimal theme:
+
+```{r plot_min}
+base_plot + theme_minimal()
+```
+
+Classic theme:
+
+```{r plot_classic}
+base_plot + theme_classic()
+```
+
+Let's try the apa theme from the jtools package, which was installed and loaded above.
+
+```{r plot_apa}
+base_plot + theme_apa()
+```
+
+What if I want my plot to look like it could be in the Wall Street Journal?
+
+```{r plot_wsj}
+base_plot + theme_wsj()
+```
+
+Well, maybe not ready for primetime there. They sure like LARGE titles. What about the Economist?
+
+```{r plot_econ}
+base_plot + theme_economist()
+```
+
+Very nice!
+
+## Changing the color palette
+
+The default colors are fine. They're easy to distinguish (for me), but they might not work well for someone who is color blind.
+
+### Color blind friendly color palettes
+
+There is a package that is supposed to show your plot as a colorblind person might see it -- **colorblindr**. However, it is still under development and isn't quite working right now. So keep it in mind -- it may work soon.
+
+**Viridis** is a widely-used color palette package that has several colorblind-friendly (and black-and-white friendly) color palettes. The "vignette" for the package, which is kind of the article introducing it and how it works, is here: [https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html)
+
+```{r plot_viridis}
+base_plot + 
+  theme_apa() +
+  scale_color_viridis(discrete = TRUE)
+
+```
+
+I find this a little hard to see (at least, on my monitor, when the "night time" mode is on, which it is now...). Also, with the white background, it's hard to see the yellow points. Let's see what it looks like on the default ggplot background.
+
+```{r plot_viridis2}
+base_plot + 
+  scale_color_viridis(discrete = TRUE)
+
+```
+
+Maybe a little better? I'm not sure.
+
+### Just pick some colors
+
+You can also just choose some colors from the default ones available in R. Here, I'm using some hex color values, but you can also use RBG or CMYK or default R ones (i.e, "blue" or "red").  
+
+```{r plot_choose}
+
+base_plot +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))
+
+```
+
+For a plot that uses the "fill" option (like a bar plot), the command is fill_color_manual.
+
+### Some other color palettes
+
+The **RColorBrewer** package has several pre-built color palettes that you can use. You can view all the RColorBrewer palettes using 
+
+```{r rcolorbrewer_show, fig.height=10}
+display.brewer.all()
+```
+
+Here are just the palettes that work for color blind people:
+
+```{r rcolorbrewer_show2, fig.height=8}
+display.brewer.all(colorblindFriendly = TRUE)
+```
+
+This is a qualitative palette: 
+
+```{r plot_rcolorbrewer}
+base_plot +
+  scale_color_brewer(palette="Set2")
+```
+
+A diverging palette:
+
+```{r plot_rcolorbrewer2}
+base_plot +
+  scale_color_brewer(palette="RdYlBu")
+```
+
+This is a sequential palette:
+
+```{r plot_rcolorbrewer3}
+base_plot +
+  scale_color_brewer(palette="Blues")
+```
+
+Very hard to see this one on the grey background.
+
+#### Color based on continuous variable
+
+If you wanted to color based on a *continuous* variable, you would get many more colors than just the two here. Imagine that, instead of gender, we wanted to color based on how many social sciences units they enrolled in ("SS" in the dataset).
+
+```{r plot_continuous}
+#data("FirstYearGPA")
+#glimpse(FirstYearGPA)
+base_plot_cont <- ggplot(data = FirstYearGPA, aes(x = HSGPA, y = GPA, color = SS)) +
+  geom_point() +
+  labs(title = "First year college GPA versus high school GPA, \n grouped by student gender", 
+       x = "High school GPA", 
+       y = "First year college GPA", 
+       color = "Social studies units")
+base_plot_cont
+  
+```
+
+Above is the default color scheme from ggplot. Let's create a gradient for the SS variable, starting at blue and increasing to red. The function "scale_color_gradient" lets you specify just the ends and it fills in between.
+
+```{r plot_continuous2}
+#data("FirstYearGPA")
+#glimpse(FirstYearGPA)
+base_plot_cont +
+    scale_color_gradient(low = "blue", high = "red")
+  
+```
+
+We could make a different gradient, starting at blue and increasing to green.
+
+```{r plot_continuous3}
+#data("FirstYearGPA")
+#glimpse(FirstYearGPA)
+base_plot_cont +
+    scale_color_gradient(low = "blue", high = "green")
+  
+```
+
+#### Color fill commands
+
+When you're using plots that "fill" rather than create lines or points, the commands are similar but generally inlude "fill" in them. Here is an unedited bar plot that uses one of the **RColorBrewer** color palettes.
+
+```{r geom_bar_1stgen_gender_dodge}
+gender_and_1stgen_dodge <- ggplot(data = FirstYearGPA, aes(as.factor(Male), fill = as.factor(FirstGen))) +
+  geom_bar(position = "dodge") +
+  scale_fill_brewer(palette="Set2")
+
+gender_and_1stgen_dodge
+
+```
+
+## Adding annotations
+
+Let's return to our base plot of first year college GPA versus high school GPA.
+
+We can add annotations to the plot to make things more clear or to point out specific aspects of the plot.
+
+For example, we can highlight the area of the plot that includes high school honor roll students, those with GPA > 3.8.
+
+```{r annotate}
+base_plot +
+  annotate(geom = "rect", 
+    xmin = 3.8, 
+    xmax = 4.1, 
+    ymin = 2.25, 
+    ymax = 4.2, 
+    fill = "red", 
+    alpha = 0.2) +
+  annotate(geom = "text", 
+    x = 3.4, 
+    y = 4.1, 
+    label = "High school honor roll students \n (GPA > 3.8)")
+```
+
+This is pretty basic and built in as an annotation. 
+
+What about a line indicating academic probation?
+
+```{r annotate2}
+base_plot +
+  annotate(geom = "segment", 
+    x = 2.25, 
+    xend = 4.25, 
+    y = 2.5, 
+    yend = 2.5, 
+    linetype = "dashed", 
+    color = "blue") +
+  annotate(geom = "text", 
+    x = 3.7, 
+    y = 1.95, 
+    label = "Students below the line are on probation")
+```
+
+Let's go crazy and add a line indicating equal GPAs. We can add text explaining why that line is important.
+
+```{r annotate3}
+base_plot +
+  annotate(geom = "segment", 
+    x = 2.25, 
+    xend = 4.25, 
+    y = 2.25, 
+    yend = 4.25, 
+    linetype = "dashed", 
+    color = "blue") +
+  annotate(geom = "text", 
+    x = 3.5, 
+    y = 2, 
+    label = "Students below the line did better in high school") +
+  annotate(geom = "text", 
+    x = 2.9, 
+    y = 4.0, 
+    label = "Students above the line did better in college")
+```
+
+Another use of the line segment could be to indicate which groups are different from one another in a bar plot.
+
+```{r geom_bar_1stgen_gender_dodge_sig}
+gender_and_1stgen_dodge_sig <- ggplot(data = FirstYearGPA, aes(Male, fill = as.factor(FirstGen))) +
+  geom_bar(position = "dodge") +
+  scale_fill_brewer(palette="Set2") +
+  annotate(geom = "segment", 
+    x = -.25, 
+    xend = .75, 
+    y = 105, 
+    yend = 105, 
+    color = "black")+
+  annotate(geom = "text", 
+    x = .25, 
+    y = 108, 
+    size = 8,
+    label = "*")
+
+gender_and_1stgen_dodge_sig
+
+```
+
+### Add regression line to plot
+
+Ok, this was all very fun and interesting, but now let's do something that we do **all the time** in real everyday research. I want to add a regression line to the plot.
+
+I could just add a line easily using the geom_smooth function. But I want to step it up a little bit and add the equation for the regression line to the plot. You can't do this automatically with geom_smooth. It will take a few steps and build on things we've done before -- but in the end, it will be reproducible, so if we change something about the data or the analysis, the numbers will (mostly) automatically update.
+
+First, let's run the regression using the lm function. Notice that I'm naming the model here to make it easier to refer to objects we get back from the analysis.
+
+```{r regression}
+
+GPA_reg <- lm(data = FirstYearGPA, GPA ~ HSGPA + Male + HSGPA*Male)
+
+reg_summ <- summary(GPA_reg)
+
+reg_summ
+
+```
+
+Remember that the coefficients are in an object called "coefficients" in the summary.
+
+```{r regression2}
+
+reg_coeffs <- reg_summ$coefficients
+
+reg_coeffs
+
+```
+
+So far, so good. There they are. On the first day of class, we talked about how the values in this object are ordered. The intercept is the first object, followed by the 3 slopes. We can print  those objects by naming them:
+
+```{r regression3}
+
+int <- reg_coeffs[1]
+GPA_slope <- reg_coeffs[2]
+Male_slope <- reg_coeffs[3]
+GPA_Male <- reg_coeffs[4]
+
+int 
+GPA_slope
+Male_slope
+GPA_Male
+
+```
+
+Ok, now we have the values and we know what they're called. We can refer to them in the plot to place them there.
+
+There are two lines. one for Male = 0 (females) and one for Male = 1 (males). It's a little easier to do some calculations for that ahead of time.
+
+```{r plot_with_eq}
+
+# Female intercept
+fem_int <- int
+# Female slope
+fem_slope <- GPA_slope
+# Male intercept
+mas_int <- int + Male_slope
+# Male slope
+mas_slope <- GPA_slope + GPA_Male
+
+base_plot +
+  geom_smooth(method = lm, se = FALSE) +
+  annotate("text", 
+    x = 2.75, 
+    y = 4.1, 
+    label = bquote("Female:" ~ hat(Y) == .(round(fem_int, 3)) + .(round(fem_slope, 3))~"* GPA")) +
+  annotate("text", 
+    x = 2.75, 
+    y = 3.9, 
+    label = bquote("Male:" ~ hat(Y) == .(round(mas_int, 3)) + .(round(mas_slope, 3))~"* GPA")) 
+```
+
+Here is a link to a very thorough explanation of the crazy stuff that's needed to get the equations to print out correctly: [https://trinkerrstuff.wordpress.com/2018/03/15/2246/](https://trinkerrstuff.wordpress.com/2018/03/15/2246/)
+
+Basically, there are three important parts:
+
+- Put everything inside the bquote() function
+
+- Plain text goes between quotation marks
+
+- Math text (such as hat(Y)) doesn't have quotation marks
+
+- Put a . before a variable that you're calling
+
+- Use tilde (\~) as a spacer between plain text and math text
+
+### Add labels to a subset of points
+
+We can add labels to all points using the geom_text function. But often, we have way too many points for this to actually be helpful. But it could be helpful to label only a small set of points -- for example, some extreme points.
+
+To show this, I'm moving to the **gapminder** dataset again. I'm going to use the dataset we already created that has *filtered* to only include observations for 2002. Here is the plot of life expectancy (X) versus GDP per capita (Y).
+
+```{r lifeexp_gdp}
+lifeexp_gdp <- ggplot(data = gapminder_2002, aes(x = lifeExp, y = gdpPercap)) +
+  geom_point() +
+  scale_y_log10()
+lifeexp_gdp
+```
+
+We can add labels:
+
+```{r label_lifeexp_gdp}
+label_lifeexp_gdp <- ggplot(data = gapminder_2002, aes(x = lifeExp, y = gdpPercap)) +
+  geom_point() +
+  scale_y_log10() +
+  geom_text(aes(label = country), hjust = "outward")
+label_lifeexp_gdp
+```
+
+Wow! That's a lot of words! It's basically useless. But we can select, within the plot, a subsample of observations to label. We could only label countries with GDP greater than a certain amount or life expectancy greater than a certain amount or *both*.
+
+Countries with GDP per capita less than 500 in 2002:
+
+```{r labelGDP_lifeexp_gdp}
+labelGDP_lifeexp_gdp <- ggplot(data = gapminder_2002, aes(x = lifeExp, y = gdpPercap)) +
+  geom_point() +
+  scale_y_log10() +
+  geom_text(aes(label=ifelse(gdpPercap<500,as.character(country),'')), 
+    vjust = "outward", 
+    hjust = "outward")
+labelGDP_lifeexp_gdp
+```
+
+Countries with life expectancy less than 40 in 2002:
+
+```{r labellifeexp_lifeexp_gdp}
+labellifeexp_lifeexp_gdp <- ggplot(data = gapminder_2002, aes(x = lifeExp, y = gdpPercap)) +
+  geom_point() +
+  scale_y_log10() +
+  geom_text(aes(label=ifelse(lifeExp < 40,as.character(country),'')))
+labellifeexp_lifeexp_gdp
+```
+
+What about those countries that kind of stand out because they have relatively high GDP but still have quite low life expectancies? What countries are those that have a life expectancy below 60 but have GDP per capita above 3000?
+
+```{r labelboth_lifeexp_gdp}
+labelboth_lifeexp_gdp <- ggplot(data = gapminder_2002, aes(x = lifeExp, y = gdpPercap)) +
+  geom_point() +
+  scale_y_log10() +
+  geom_text(aes(label=ifelse((lifeExp < 60) & (gdpPercap > 3000),as.character(country),'')),
+    hjust = "outward")
+labelboth_lifeexp_gdp
+```
+
+The **ggrepel** package will automatically move the text boxes away from each other. The syntax is the same as geom_text and geom_label, except you use geom_text_repel and geom_label_repel. The vignette is here: [https://cran.r-project.org/web/packages/ggrepel/vignettes/ggrepel.html](https://cran.r-project.org/web/packages/ggrepel/vignettes/ggrepel.html)
+
+# Some miscellaneous things...
+
+## Remove the legend
+
+Let's say that your plot is set up in such a way that you don't really need the legend. You can remove it with:
+
+- guides(fill = FALSE)
+
+## Change the location of the legend
+
+- theme(legend.position = "top")
+
+- Options include top, bottom, left, right
+
+## Great use for the coord_flip function
+
+- Flip box plots from vertical to horizontal, especially when the X variable (category) has long names. For example, in the **gapminder** dataset:
+
+```{r gap_flip}
+gapminder_europe <- gapminder %>% filter(continent == "Europe")
+
+life_exp_box <- ggplot(data = gapminder_europe, aes(x = country, y = lifeExp)) +
+  geom_boxplot()
+life_exp_box
+```
+
+So many box plots. You can see anything, you can't read anything, it's a mess. But let's just flip the axes.
+
+```{r gap_flip2}
+life_exp_box_flip <- ggplot(data = gapminder_europe, aes(x = country, y = lifeExp)) +
+  geom_boxplot() +
+  coord_flip()
+life_exp_box_flip
+```
+
+Ooh, now it looks lovely. You can see all the box plots. You can read all the country names. Very nice.
+
+We could do one more thing to make this plot look even nicer. Currently, the countries are ordered in (reverse) alphabetical order. We could order them by the median, to make it easier to compare.
+
+```{r gap_flip3}
+life_exp_box_flip_order <- ggplot(data = gapminder_europe, 
+                            aes(x = reorder(country, lifeExp, fun = median), y = lifeExp)) +
+  geom_boxplot() +
+  coord_flip()
+life_exp_box_flip_order
+```
+
+This reorders the old X axis (now our Y axis due to the coordinate flip) by the median value of life expectancy (old Y, now X). The package **forcats** allows you to do a lot of things related to factor variables ("**for cat**egorical variables"), including reverse the order of the categories. See here for more info: [https://cmdlinetips.com/2019/02/how-to-reorder-a-boxplot-in-r/](https://cmdlinetips.com/2019/02/how-to-reorder-a-boxplot-in-r/)
+
+## Plotting a proportion instead of a count
+
+The default for a bar plot is to plot the count of the variable. 
+
+```{r count}
+
+barplot1 <- ggplot(data = FirstYearGPA, aes(Male)) +
+  geom_bar()
+barplot1
+
+```
+
+You can ask ggplot to plot the proportion instead. How to do this is *very* non-obvious. You have to ask ggplot to use an invisible variable that it calculates in the course of creating the plot called "prop" (standing for proportion). It's an internal variable so you have to call it with 2 periods on either side of it, like:
+
+..prop..
+
+Notice that this is in a mapping function in geom_bar, not in the mapping / aes function in the main ggplot call.
+
+```{r proportion}
+barplot2 <- ggplot(data = FirstYearGPA, aes(Male)) +
+geom_bar(mapping = aes(y = ..prop.., group = 1))
+barplot2
+
+```
+
+The "group = 1" part may or may not be needed. The book ([socviz.co](socviz.co)) gives an example where it's needed, but I cannot replicate that here. So include it, try it without (but check that it doesn't mess up your plot), whatever you want. If you have a plot that looks all wrong and you don't have that, try including it.
+
+## Different kinds of dodging
+
+We've talked about using the "dodge" option for a bar plot to put the bars side by side instead of stacked. 
+
+```{r geom_bar_dodge1}
+dodge1 <- ggplot(data = FirstYearGPA, aes(Male, fill = as.factor(FirstGen))) +
+  geom_bar(position = "dodge") 
+
+dodge1
+
+```
+
+There is another option, "dodge2", that does something slightly different.
+
+```{r geom_bar_dodge2}
+dodge2 <- ggplot(data = FirstYearGPA, aes(Male, fill = as.factor(FirstGen))) +
+  geom_bar(position = "dodge2") 
+
+dodge2
+
+```
+
+You can see that the bars in the same X category are no longer right next to one another. For this plot, it might not be that much of a difference, but if you have more than two categories, the plot can change a lot. The book has some examples where dodge2 can break your plot. 
+
+## geom_bar versus geom_col
+
+We've talked about two different geoms that seem really similar: geom_bar and geom_col. How are they different? The main way is the statistic that they use. geom_bar plots the count while geom_col plots the value ("identity"). One place where this can come up is when you have a summary table that you're trying to plot.
+
+Let me summarize some data from the FirstYearGPA dataset.
+
+```{r summary}
+summ_GPA <- FirstYearGPA %>%
+  group_by(Male, FirstGen) %>%
+  summarize(N = n()) %>%
+  ungroup() %>%
+  mutate(proportion = N / sum(N))
+
+summ_GPA
+
+```
+
+A couple of things to notice here. 
+
+- n() is a function that counts how many rows there are
+
+- Since R is case sensitive, N is different from n
+
+- group_by() means that we do everything within each group (the 4 categories)
+
+- ungroup() means that we don't do anything by groups anymore
+
+  - if I hadn't done that, the proportions wouldn't sum to 1
+
+This is a summary table with the count in a column called "N" and the overall proportion in a column called "proportion".
+
+Since we have proportions already, we can either
+
+1. Use geom_bar and specify "identity" to use the actual value (instead of the default count) or
+
+```{r bar_id}
+
+geom_bar_id <- ggplot (data = summ_GPA, 
+                       aes(x = as.factor(Male), y = proportion, fill = as.factor(FirstGen))) +
+  geom_bar(position = "dodge", stat = "identity")
+geom_bar_id
+
+```
+
+On a summary table:
+geom_bar(position = "dodge", stat = "identity")
+versus
+geom_col()
+
+2. Use geom_col and use it's default of the actual value
+
+```{r col_default}
+
+geom_col_default <- ggplot (data = summ_GPA, 
+                            aes(x = as.factor(Male), y = proportion, fill = as.factor(FirstGen))) +
+  geom_col(position = "dodge")
+geom_col_default
+
+```
+                    
+These figures are exactly the same, but we got to them different ways.
+             
+           

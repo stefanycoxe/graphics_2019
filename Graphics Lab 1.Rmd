@@ -1,0 +1,258 @@
+---
+title: "Graphics week 1 lab"
+author: "Stefany Coxe"
+date: "8/29/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("markdown")
+#install.packages("ggplot2")
+library(markdown)
+library(ggplot2)
+set.seed(31415)
+```
+
+# Getting started with R and R markdown
+
+This document will help you get started using R, Rstudio, and R markdown to create cohesive documents that analyze and present your data.
+
+The really cool thing about a Markdown document is that you will have both analysis (in "code chunks") and explanatory text in a single document. The code chunks will be R syntax (but other programming languages also use versions of Markdown, so you can translate this to e.g., Python).
+
+You can find out more details about R markdown at <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button, a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
+
+## Plain text
+
+You can write plain text anywhere in the document. Use headers to organize your document. A single # will create a level 1 header, two #s will create a level 2 header, etc. 
+
+Hit enter an extra time to start a new paragraph. You can make text *italic* by surrounding it with 1 asterisk or make text **bold** by surrounding it with 2 asterisks. 
+
+You can insert equations into your text by surrouding them by dollar sign ($). Use the caret (^) to create superscripts and the underscore (_) to create subscripts. See the R markdown Reference Guide (on Canvas or rstudio.com) for more formatting tips.
+
+You can also create ordered or unordered lists (i.e., bullet points). See below for an example of this.
+
+## Code chunks
+
+A code chunk is surrounded by 3 backticks (the key above the **TAB** key), followed by left curly bracket and the letter "r" to indicate that the syntax will be for R. The text following the "r" is a label or name for this specific chunk, so that you can refer to it later if needed. I am calling this code chunk "gendata" because I will use it to **gen**erate some **data**. 
+
+The additional command "echo = TRUE" is an optional command that tells R the repeat the syntax in the output document. The command "echo = FALSE" would tell R to **NOT** repeat the syntax in your output document. (You may want to do this for some procedures that produce a lot of unnecessary output.)
+
+### Some notes about the first code chunk above
+
+Each markdown document starts with a code chunk with some settings. You can use the default starter code chunk, or you can add some additional commands. I've added some additional options to the first "setup" code chunk. 
+
+In R, you have to both install a package (you do this once) and then load it (you do this each time you open R and knit the document). Here, I have the command to install the **markdown** and **ggplot2** packages, but the lines are *commented out* using the pound sign (#). By commenting them out, R doesn't run them. You'll want to uncomment those lines the first time you run this code in a new install of R, but you can then comment them out for any subsequent runs.
+
+The "library(markdown)" and "library(ggplot2)" lines load the **markdown** and **ggplot2** packages. You do this every time you run your file that uses these packages. It seems a little onerous, but you end up developing a list of packages you use often and just always loading them at the start of any file.
+
+The last line sets a random seed value. This is useful because we will be generating random numbers. If we didn't specify a random seed, every time I re-ran this document, I would get different values for the random numbers I generated. The random seed value means that every time I (or you!) run this, we will all get the same values. This is important for reproducible science.
+
+## Create some data
+
+I am going to create some data here, to show you how easy it is. We will sometimes create our own data and sometimes read in data from another source.
+
+```{r gendata, echo = TRUE}
+x <- rnorm(100, 0, 1)
+e <- rnorm(100, 0, 0.6)
+y <- rnorm(100, (0.2 + 0.8*x + e))
+week1data <- data.frame(x, y)
+```
+
+Some things to note about this R syntax.
+
+1. <- is the **assignment operator** in R
+    + You are assigning the values in rnorm(100, 0, 1) to the object x
+    + You can sometimes (but not always) also use the equal sign (=) but they do different things
+    + The equal sign sets two things as the same, while the assignment operator assigns a value or a set of values to an object
+2. x is an object that I created
+    + x is a normally distributed (**rnorm** function) variable with a mean of 0 and a variance of 1 with n = 100 observations 
+3. e is another object I created
+    + e is a variable that is normally distributed with a mean of 0 and a variance of 0.6
+    + This is a residual for each person
+4. y is another object I created
+    + y is a function of some regression weights ($b_0$ = 0.2 and $b_1$ = 0.8), x, and e
+5. I placed x and y into a **data frame**
+    + A data frame is the name for a dataset in R
+    + The data frame is an object that I called "week1data"
+
+## Correlation
+
+First, let's look at the simplest form of relationship between two variables, the correlation. I am going to create an object called "xy_corr" and assign to it the correlation between x and y.
+
+```{r run_corr}
+xy_corr <- cor(x, y)
+```
+
+Notice that just running the correlation **does not** give you the correlation in your output. R will only show you what you ask for. You asked it to run the correlation, but not to show it to you...
+
+Just type the object's name (xy_corr) and it will be printed for you.
+
+```{r see_corr}
+xy_corr
+```
+
+My *very favorite* thing about Markdown documents is that you can refer to a value **by name** and R markdown will substitute in the **value**. To refer to an object you created with R code, type r and the object between a pair of backticks (the key above **TAB**). Here, I will refer to the correlation value by name by typing:
+
+The correlation between x and y is `r xy_corr`.
+
+I didn't type out the number! R markdown just grabbed the number and inserted it for me. How easy it would be to create a reproducible report. Imagine how wonderful it will be to **NOT** have to copy tables of numbers over and over...
+
+## Scatterplot
+
+There are several very simple packages in R to produce plots, but since this course will focus on the **ggplot** package, let's just get started with that.
+
+Let's create a simple scatter plot of x versus y.
+
+```{r x_versus_y}
+x_versus_y <- ggplot(week1data, aes(x = x, y = y)) + geom_point()
+```
+
+In order to get a scatterplot, you need to specify the name of the dataset (week1data), the variables to be plotted on the x and y axes (x and y, respectively), and ask for the geom_point object (standing for a geometric object that is the data points -- we'll talk more about geometric objects next week).
+
+As before with the correlation, this code just created a plot that I've called "x_versus_y". It doesn't print it unless you ask for it to be printed. So let's do that.
+
+```{r x_versus_y_print}
+x_versus_y
+```
+
+One of the cool things that we can do with **ggplot2** is add to already existing plots. So I can use x_versus_y and add things to it. Let's add a regression line to it (and print the plot, all in one chunk).
+
+```{r x_versus_y_regline}
+x_versus_y_regline <- x_versus_y + geom_smooth(method = lm)
+x_versus_y_regline
+```
+
+Notice that I don't have to tell R that we're using the week1data dataset or that it should plot the scatterplot of x and y again. I am telling it to take the graph we already made (called "x_versus_y") and just add to it.
+
+## Regression
+
+We can extract the regression coefficients from the regression line and print those out.
+
+To do this, we need to run a regression. Linear regression is done using the "lm" function, which stands for "linear model".
+
+```{r regression}
+reg_x_v_y <- lm(y ~ x, data = week1data)
+```
+
+The outcome is y and the predictor is x. The tilde (~) tells R that y is predicted by x.
+
+And then look at the output. (Remember that R doesn't show you anything unless you ask for it.)
+
+```{r regression_output}
+reg_summ <- summary(reg_x_v_y)
+reg_summ
+```
+
+This is where things can get a little squirrelly. Every procedure in R has a set of objects (remember, everything is an object) that it outputs. You have to figure out the names of those objects, either by reading a handout like this that explains it or by using help files. You can get the **help file** for the "lm" function by typing "?lm" (no quotation marks) in the Console.
+
+To make this a little bit easier, I have named the summary object "reg_summ" (for "regression summary"). 
+
+Within the summary, there is an object called "coefficients" which stores the coefficients.
+
+We can view this object by naming it: 
+
+```{r coeffs}
+reg_summ$coefficients
+```
+
+(You can also name it in text (rather than a code chunk) like this `r reg_summ$coefficients`
+
+But it's a little messy and hard to read.)
+
+
+
+Within the "coefficients" object, there are several different objects. Look at the "reg_sum" output to see what's in the "coefficients" table. Here it is again:
+
+```{r regression_output2}
+reg_summ
+```
+
+There are the estimates, standard errors, t values, and p values for each of the intercept and slope.
+
+To get to the intercept, we need to ask for the **first** object in the Coefficients table in the regression summary. We can use this statement (within single backticks): 
+
+r reg_summ$coefficients[1]
+
+which produces `r reg_summ$coefficients[1]`
+
+To get to the slope, we need to ask for the **second** object in the Coefficients table in the regression summary. We can use this statement (within single backticks): 
+
+r reg_summ$coefficients[2]
+
+which produces `r reg_summ$coefficients[2]`
+
+Later in the course, we'll talk about formatting these values -- for example, you probably don't need so many decimal places.
+
+If you look at the "coefficients" object, the 1st entry is the intercept and the 2nd is the slope. That's why we use 1 and 2 in brackets, to call that specific value. If we wanted the t-statistic for the slope, we would use [6], which produces `r reg_summ$coefficients[6]`, which is the number we wanted.
+
+***
+
+# Some more example data
+
+Here are four small data sets that we're going to examine. They are all in the dataset called "anscombe" that we're going to load to start. To load a dataset that's in base R or one of the packages you're already using, type data(NAME), where NAME is the name of the dataset.
+
+There are 8 variables: x1 - x4 and y1 - y4. The first dataset is x1 and y1, the second is x2 and y2, etc.
+
+First, let's look at descriptive statistics and regression for each of the datasets.
+
+```{r anscombe_desc}
+data(anscombe)
+
+anscombe_means <- sapply(anscombe, mean)
+anscombe_means
+
+anscombe_sd <- sapply(anscombe, sd)
+anscombe_sd
+
+anscombe_x1y1 <- cor(anscombe$x1, anscombe$y1)
+anscombe_x1y1 
+```
+
+The "sapply" function tells R to apply the selected operation (i.e, mean or standard deviation) to all the variables in the specified dataset. You don't have to ask for it to be done to each variable specifically.
+
+The "cor" function works a little bit differently. You can ask for a large correlation matrix or you can specify the specific variables you want a correlation between. So I asked for correlations between each pair of x and y variables. Unlike some other procedures, you don't separately tell it which dataset to use. You tell it the dataset and the variable in a single statement. We tell it that the x variable is anscombe$x1, which means that you want the variable x1 in the dataset anscombe.
+
+- What do you notice about the means, standard deviations, and correlations for each pair of x y variables (i.e, x1 and y1, x2 and y2, etc.)?
+
+- ANSWER:
+
+Now let's look at the regression 
+
+```{r anscombe_reg}
+reg_anscombe1 <- lm(y1 ~ x1, data = anscombe)
+reg_summ1 <- summary(reg_anscombe1)
+reg_summ1
+
+#complete the code to run the regressions and show the summary for each of the other datasets.
+```
+
+- What do you notice about the regressions for each pair of x y variables? Consider the intercepts and slopes as well as their significance values. Try writing it up and referring to the intercept and slope objects in text.
+
+- ANSWER:
+
+
+Now let's look at scatterplots of each pair of x y variables. 
+
+```{r anscombe_plot}
+x1_versus_y1 <- ggplot(data = anscombe, aes(x1, y1)) + geom_point()
+x1_versus_y1
+
+#complete the code to creat and print the plots for each of the other datasets.
+```
+
+- What do the plots show? Are they telling the same story as the descriptive statistics and regressions?
+
+- ANSWER: 
+
+
+
+
+
+
+
+

@@ -1,0 +1,404 @@
+---
+title: "Graphics week 9 lab"
+author: "Stefany Coxe"
+date: "10/24/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+#install.packages("markdown")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("Stat2Data")
+#install.packages("gapminder")
+#install.packages("jtools")
+#install.packages("ggrepel")
+#install.packages("ggthemes")
+#install.packages("broom")
+# Install devtools package if necessary
+#if(!"devtools" %in% rownames(installed.packages())) install.packages("devtools")
+# Install the stable development verions from GitHub
+#devtools::install_github("crsh/papaja")
+# Install the latest development snapshot from GitHub
+#devtools::install_github("crsh/papaja@devel")
+#install.packages("kableExtra")
+#install.packages("bookdown")
+#install.packages("xtable")
+#install.package("knitr")
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(gapminder)
+library(jtools)
+library(ggrepel)
+library(ggthemes)
+library(broom)
+library(papaja)
+library(kableExtra)
+library(bookdown)
+library(xtable)
+library(knitr)
+```
+
+# Lab tasks
+
+- Run regression
+
+- Assess model fit graphically using
+
+  - Leverage
+  
+  - Discrepency
+  
+  - Influence
+  
+- Output data frames as nicer tables
+
+
+# Run regression
+
+```{r reg}
+data(FirstYearGPA)
+glimpse(FirstYearGPA)
+
+model1 <- lm(GPA ~ HSGPA, data = FirstYearGPA)
+
+```
+
+The model object, `model1`, has a lot of information in it. If we just call that object, we don't get much of the information though.
+
+```{r model1}
+
+model1
+
+```
+
+We have previously used the `summary()` function to examine the output from `lm()`.
+
+```{r reg_summ}
+summary(model1)
+
+```
+
+There's a lot more information here, but it's not well-organized and it's hard to get to the pieces we might want to use.
+
+# "Tidy" up your results
+
+The **broom** package ([https://cran.r-project.org/web/packages/broom/vignettes/broom.html](https://cran.r-project.org/web/packages/broom/vignettes/broom.html)) is part of the **tidyverse** set of packages (like **ggplot2** and **dplyr**). It has three functions to make dealing with model objects a bit easier.
+
+The `tidy()` function places the table of regression coefficients (including standard errors, p-values, etc.) into a tibble (a special kind of data frame). 
+
+The `glance()` function places the overall model fit statistics, like $R^2$ into a tibble.
+
+The `augment()` function places the observed values, predicted values, and several types of residuals into a tibble.
+
+Each function takes the saved model object (e.g. `model1` above) as it's only *required* argument.
+
+```{r reg_broom}
+m1_coeffs <- tidy(model1)
+m1_coeffs
+
+m1_fit <- glance(model1)
+m1_fit
+
+m1_res <- augment(model1)
+m1_res
+```
+
+## Output some nice looking tables
+
+These are concise data frames that you can use with minimal edits. To print one out as a *nicely formatted* table, you can use the `xtable()` function from the **xtable** package. For APA format, you can use the `apa_table()` function from the **papaja** package (which will also require the **kableExtra** package to work correctly and output a PDF). Other options are the **kable** and **pander** packages.
+
+Here is the **xtable** version of the table of regression coefficients.
+
+```{r coeff_table, results = "asis"}
+table1 <- xtable(m1_coeffs, digits = 2, 
+                 caption = "Linear model coefficients, standard errors, and p-values.")
+
+print(table1, comment = FALSE)
+
+```
+
+Here is the **xtable** version of the head (first 6 rows) of the table of fitted values and residuals.
+
+```{r head_aug_table, results = "asis"}
+table2 <- xtable(head(m1_res), digits = 2, 
+                 caption = "First 6 rows of fitted values and residual values.")
+
+print(table2, comment = FALSE)
+
+```
+
+The `comment = FALSE` argument in the print statement tells it to not print out an annoying message saying that the table was formatted with **xtable** in LaTeX.
+
+(You can use the **broom** functions for other types of models besides `lm()` -- they work in basically the same way. There are also special options for special types of models, like generalized linear models (GLiMs) or generalized additive models (GAMs) or k-means clustering. See the documentation for more details about potential additional arguments: [https://cran.r-project.org/web/packages/broom/broom.pdf](https://cran.r-project.org/web/packages/broom/broom.pdf).)
+
+## Fitted values and residuals
+
+These are the values provided for `lm()` using the `augment()` function. Note that the added columns start with "." to avoid over-writing a variable you might already have.
+
+`.fitted` = fitted (predicted) values of model
+
+`.se.fit` = standard errors of fitted (predicted) values
+
+`.resid` = raw residuals
+
+`.hat` = diagonal of the hat matrix (leverage)
+
+`.sigma` = residual standard deviation when this observation is removed
+
+`.cooksd` = Cook's distance
+
+`.std.resid` = (internally studentized) standardized residuals
+
+# Outliers
+
+Using graphs is one of the best methods of examining model fit and checking for outliers.
+
+## Leverage
+
+*Leverage* tells you how extreme a case is in the predictor space. There are two measures of leverage: leverage (given by SAS and R `augment()`) and centered leverage (given by SPSS). Leverage has a minimum of $1 / n$ and a maximum of 1. 
+
+Cut-offs for leverage are > $3(k + 1)/n$ for small to medium samples and > $2(k + 1)/n$ for large samples and/or many predictors.
+
+An "index plot" has row or ID on the X axis and the value you're looking at on the Y axis. 
+```{r lever_plot1}
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .hat)) +
+  labs(x = "Index") +
+  geom_point()
+```
+
+This is not a particularly large sample and there's only one predictor, so I'll use the "small to medium sample" cut-off, $3(k + 1)/n$. I'll add that as a line on the plot.
+
+```{r lever_plot2}
+lever_cut <- 3 * (1 + 1) / nrow(m1_res)
+
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .hat)) +
+  labs(x = "Index") +
+  geom_point() +
+  geom_hline(yintercept = lever_cut, linetype = "dashed", color = "blue")
+```
+
+Let's label those high leverage points.
+
+```{r lever_plot3}
+lever_cut <- 3 * (1 + 1) / nrow(m1_res)
+
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .hat)) +
+  labs(x = "Index") +
+  geom_point() +
+  geom_hline(yintercept = lever_cut, linetype = "dashed", color = "blue") +
+  geom_text_repel(aes(label=ifelse((.hat > lever_cut) , 
+                                   as.character(rownames(m1_res)),'')), 
+                  hjust = "outward")
+```
+
+## Discrepancy
+
+Residuals are a measure of *discrepancy*, or the difference between the observed value and the predicted value. The `augment()` function produces raw residuals and internally studentized (standardized residuals). 
+
+Here is an index plot of the raw residuals. The row is the X value and the residual is the Y value.
+
+```{r resid_plot}
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .resid)) +
+  labs(x = "Index") +
+  geom_point() +
+  geom_smooth(method = loess)
+```
+
+If the assumptions of linear regression are satisfied, the smoothed line should have a mean of 0, a slope of 0, and constant variance. 
+
+**How do the residuals look? Are we good here with a linear regression?**
+
+### Compare residuals to predicted value
+
+With only a single predictor, we can compare the residuals to the single predictor.
+
+```{r resid_vs_predictor}
+ggplot(data = m1_res, aes(x = HSGPA, y = .resid)) +
+  geom_point() +
+  geom_smooth(method = loess)
+```
+
+More generally, with more than one predictor, we can compare the residuals to the **predicted value** ($\hat Y$). 
+
+```{r resid_vs_predicted}
+ggplot(data = m1_res, aes(x = .fitted, y = .resid)) +
+  labs(x = "Predicted GPA") +
+  geom_point() +
+  geom_smooth(method = loess)
+```
+
+These two plots *look* very similar (because there's just the one predictor), but note that the X axis for the first is the predictor (HSGPA) while the X axis for the second is the predicted Y value (predicted GPA).
+
+In either case, if the assumptions of linear regression are satisfied, the smoothed line should have a mean of 0, a slope of 0, and constant variance.
+
+**How do the residuals look? Are we good here with a linear regression?**
+
+### Standardized residuals
+
+The "standardized residuals" output here are the **internally studentized residuals**. These are the raw residual divided by the standard deviation of the residuals, which is a function of the $MS_{error}$. 
+
+Our preferred standardized residuals are **externally** standardized (sometimes called **externally deleted**). This uses each point compared to a line in which that point was excluded and uses the $MS_{error}$ with the point deleted too. This *minimizes* the impact a point has to pull the regression line toward it and make it's residual smaller. Handily, it also follows a t distribution, making it easier to develop cut-offs.
+
+For the moment, let's just look at the internally studentized residuals, know that 
+
+1. They may miss some problem cases.
+
+2. There aren't good cut-offs for them.
+
+```{r stand_resid_plot1}
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .std.resid)) +
+  geom_point() +
+  geom_smooth(method = loess) +
+  labs(x = "Index") 
+```
+
+We can calculate the **externally studentized residuals** separately using the `rstudent()` function. Let's add them to the data frame with the other residuals.
+
+```{r add_ext_resid, results = "asis"}
+m1_res$.ext.resid <- rstudent(model1)
+
+xtable(head(m1_res))
+```
+
+Unfortunately for demonstration purposes, the internally and externally studentized residuals *for this model* are basically identical. (**Check**: plot the internally studentized versus externally studentized in a plot -- they are an almost perfect diagonal line.) The externally studentized residuals have a t distribution with n - k - 1 degrees of freedom. The usual cut-offs are $\pm$ 2 for small to medium samples or $\pm$ 3 for large samples.
+
+**What does that mean for our model? Are there points with large discrepancy?**
+
+**Make an index plot showing the externally studentized residuals. Add some lines for a cut-off of $\pm$ 2.** 
+
+<!-- ### A helper package -->
+
+<!-- The **olsrr** package calculates externally studentized residuals and also offers additional plots. Check out some options here: [https://cran.r-project.org/web/packages/olsrr/vignettes/influence_measures.html](https://cran.r-project.org/web/packages/olsrr/vignettes/influence_measures.html) -->
+
+## Influence
+
+*Influence* tells you how likely it is that a point could change the results. Influence is roughly a product of leverage (outlier in the predictor space) and discrepancy (large residual) -- cases with high influence generally are high on both leverage and discrepancy.
+
+### Cook's d
+
+Cook's d (or distance) is a case-wise measure of *influence* that tells you about overall change in predicted value. 
+
+```{r cooksd_plot1}
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .cooksd)) +
+  geom_point() +
+  labs(x = "Index")
+```
+
+There are several cut-off values that are suggested for Cook's d. One version is 3 times the mean of all Cook's d values. Another version is 4 / n. Let's calculate those values and plot lines corresponding to each. (I also added a caption saying what the lines represent, including the calculated value for each cut-off - *fancy!*)
+
+```{r cooksd_plot2}
+cooksd_3mean <- 3*mean(m1_res$.cooksd)
+cooksd_4n <- 4 / nrow(m1_res)
+
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .cooksd)) +
+  geom_point() +
+  labs(x = "Index") +
+  geom_hline(yintercept = cooksd_3mean, linetype = "dashed", color = "blue") + 
+  geom_hline(yintercept = cooksd_4n, linetype = "dashed", color = "red") +
+  labs(caption = 
+         bquote("Blue dashed line: 3*mean(Cook's d) =" ~ 
+          .(round(cooksd_3mean, 3))~". Red dashed line: 4/n =" ~.(round(cooksd_4n, 3))))
+```
+
+Let's add ID numbers for the cases that meet both cut-offs.
+
+```{r cooksd_plot3}
+ggplot(data = m1_res, aes(x = 1:nrow(m1_res), y = .cooksd)) +
+  geom_point() +
+  labs(x = "Index") +
+  geom_hline(yintercept = cooksd_3mean, linetype = "dashed", color = "blue") + 
+  geom_hline(yintercept = cooksd_4n, linetype = "dashed", color = "red") +
+  labs(caption = bquote("Blue dashed line: 3*mean(Cook's d) =" 
+                        ~  .(round(cooksd_3mean, 3))~". Red dashed line: 4/n ="
+                        ~.(round(cooksd_4n, 3)))) +
+  geom_text_repel(aes(label=ifelse((.cooksd > cooksd_3mean) & 
+                                     (.cooksd >cooksd_4n), 
+                                   as.character(rownames(m1_res)),'')), 
+                  hjust = "outward")
+```
+
+Note that this dataset doesn't have an ID variable, so I'm just using the row number. In R, the row numbers are called "rownames" and you can refer to them with the `rownames()` function.
+
+### DFFITS
+
+DFFITS (difference in fits standardized) is a case-wise measure of *influence* that tells you about overall change in predicted value. 
+
+We can calculate DFFITS separately using the `dffits()` function. Let's add them to the data frame with the other residuals.
+
+```{r add_dffits, results = "asis"}
+m1_res$.dffits <- dffits(model1)
+
+xtable(head(m1_res))
+```
+
+Cut-offs for DFFITS are > 1 for small to medium samples and > $2 \sqrt{(k + 1)/(n)}$ for large samples.
+
+### DFBETAS
+
+DFBETAS (difference in betas) is a case-wise measure of *influence* that tells you about change in regression coefficients. There is one value per case, per regression coefficient (including the intercept). 
+
+We can calculate DFBETAS separately using the `dfbetas()` function. Let's add them to the data frame with the other residuals. Note that there is *one new column* for each predictor and the intercept. They also have the same names as the actual predictors, so I'm going to do a bit more work to add them and give them unique names.
+
+```{r add_dfbetas, results = "asis"}
+# get column 1 of the dfbetas output data
+.dfbetas.int <- dfbetas(model1)[,1]
+# get column 2 of the dfbetas output data
+.dfbetas.x1 <- dfbetas(model1)[,2]
+# put the two columns into a single data frame
+m1_res_dfbetas <- data.frame(.dfbetas.int, .dfbetas.x1)
+
+# add the 2 columns for dfbetas to the end of the file with other residuals in it
+m1_res <- cbind(m1_res, m1_res_dfbetas)
+
+xtable(head(m1_res))
+```
+
+Cut-offs for DFBETAS are > $\pm 1$ for small to medium samples and > $\pm 2 / \sqrt{n}$ for large samples.
+
+**Make plots of the DFFITS and DFBETAS values. Are there cases that are causing changes in the overall predicted values or the regression coefficients?**
+
+
+## Outliers summary
+
+Don't use any one measure as a reason for *removing cases*. 
+
+Look at all measures -- **Are there any cases that show up repeatedly?** Check them for data entry errors or other problems. *Consider* removing them to see if the results change.
+
+## Your task for today
+
+**Try running a model with both HSGPA and SATV as predictors. Examine the outlier statistics. Are there any outliers that show up repeatedly?**
+
+
+
+
+
+\newpage
+## One more topic: Predict for new values of the predictor
+
+The `predict()` function will give predicted values based on a model object that you specify. You can optionally specify a new dataset with new predictor values and get the predicted outcome values for those new predictor values.
+
+Not specifying a new predictor value results in the same predictor values you got from the `augment()` function. I'll output them as an actual table, since the default output will drop the last column.
+
+```{r reg_pred1, results = "asis"}
+FirstYearGPA$old_prediction <- predict(model1)
+
+xtable(head(FirstYearGPA))
+
+```
+
+The values in the "old_prediction" column match those in the ".fitted" column exactly. They're the same predictor value, so the same predicted value.
+
+We can also specify a new dataset (i.e., predictor values) to use. Here I have some new observations of HSGPA. I can get predicted values for each case based on the model run in `model1`. (Notice that I don't have Y values for these cases, just X values.)
+
+```{r reg_pred2, results = "asis"}
+new_HS_gpa <- data.frame(HSGPA = c(3.5, 3.2, 2.8, 3.8, 2.9))
+
+new_HS_gpa$new_prediction <- predict(model1, newdata = new_HS_gpa)
+
+xtable(new_HS_gpa)
+```

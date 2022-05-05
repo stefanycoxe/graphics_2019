@@ -1,0 +1,135 @@
+---
+title: "Graphics week 11 lab"
+author: "Stefany Coxe"
+date: "11/07/2019"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(markdown)
+library(ggplot2)
+library(tidyverse)
+library(Stat2Data)
+library(gapminder)
+library(jtools)
+library(ggrepel)
+library(ggthemes)
+library(broom)
+library(papaja)
+library(kableExtra)
+library(bookdown)
+library(xtable)
+library(knitr)
+```
+
+# Last week's examples 
+
+There are two versions of last week's **shiny** examples on Canvas
+
+- **shinyinmarkdowndemo2**: Shiny in markdown (modified to remove the **markdown** example portion)
+
+- **app.R** in "shiny_demo" folder: Shiny app
+
+In their current state, they both use the "FirstYearGPA" data from the **Stat2Data** package to create a histogram of `HSGPA` with a user-selected number of bins. 
+
+This is not terribly exciting. Let's make them more interesting and more **interactive**.
+
+# Modifications - Part 1
+
+Instead of creating a histogram, we'll make a scatterplot.
+
+1. Change the dropdown to select the number of bins to a dropdown that selects one of the variables from the dataset:
+  
+- GPA  
+- HSGPA  
+- SATV  
+- SATM  
+- Male  
+- HU  
+- SS  
+- FirstGen  
+- White  
+- CollegeBound  
+
+These will need to be entered as a list using the `c()` function. Each variable name should be in quotes. Make sure to change the label (both the variable name and user-visible label).
+
+2. Then add an additional input widget with radio buttons to select one of the variables from the dataset.
+
+The set-up is similar to the dropdown, but see [https://shiny.rstudio.com/tutorial/written-tutorial/lesson3/](https://shiny.rstudio.com/tutorial/written-tutorial/lesson3/) for specific code for the radio buttons.
+
+3. Change the **ggplot** code for a histogram to code for a scatterplot with the two selections as the X and Y variables.
+
+Note. To get these to work correctly, you'll need to wrap the X and Y variables in `!!as.name()`. The reason is that you read the variables in as the wrong "type" of variable. This gets them in the correct format by removing the quotes -- that's what the !! does. (Another option might be to manually change the type of the read-in variables. Or there's a `varSelectInput` widget that uses all the variables in a dataset.)
+
+## Some common errors and solutions
+
+- Make sure that things are named the same in `input` and `output` portions of the code
+
+- You won't be able to really test the changes until you've done both parts, since the scatterplot will depend on your input being correct. So don't get discouraged if things aren't working the middle of the process -- they shouldn't work.
+
+- Let Rstudio help you find errors. If you put your cursor after a `)`, Rstudio will flash where (it thinks) the matching `(` is. There are **A LOT** of parentheses in a **shiny** app.
+
+# Modifications - Part 2
+
+Add the option to include a fitted line
+
+1. Add input widget for the optional fitted line (ui section)
+
+There are a few ways to do this, but let's do it by including a single checkbox using `checkboxInput()`
+
+See [https://shiny.rstudio.com/tutorial/written-tutorial/lesson3/](https://shiny.rstudio.com/tutorial/written-tutorial/lesson3/) for specific code for the checkbox.
+
+If the box is checked, add the fitted line. If not, no fitted line. Give the checkbox an appropriate label for this.
+
+You should be able to run the code here and see the checkbox show up. It won't do anything when you check or uncheck it, but it will show up as an input option.
+
+2. Add conditional logic to include the checkbox or not (server section)
+
+This is a little complicated but *extremely* useful. You'll need to do several things.
+
+First, you'll use an if/then statement 
+
+`if (condition) {`
+
+`do_this_if_condition_is_true`
+
+`}`
+
+Second, you'll need to name your plot, which we haven't done *in this app* before, but have done many times elsewhere.
+
+In your `renderPlot` call, create the plot **without** the line (give it a name), then put in the if statement. In the `do_this` section of the if statement, create the plot **with** the fit line as a plot **with the same name**.
+
+This -- and this is super important -- **after** the `if` statement but **before** you end `renderPlot`, call the name of the plot.
+
+3. Add a go button
+
+Without making some additional changes, the app will show the scatterplot for the first (default) variables, but when you change them, it won't change the plot until you hit "go".
+
+# Modifications - Part 3
+
+Some aesthetic improvements
+
+1. The plot is really wide. Change the width of the plot so it looks a bit nicer.
+
+2. Increase the fonts on the plot.
+
+3. Make the sidebar narrower.
+
+# Some other ideas for interactivity
+
+Select just two variables to make a scatter plot of.
+
+1. Then have a slider to show only certain ranges of each variable.
+
+- `sliderInput()`
+
+2. Then color points based on one of the binary variables. 
+
+- `if` statement
+
+- `checkboxInput()` for just one variable
+
+- `radioButton()` to select one from a list
+
+
