@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Stefany Coxe" />
+
+
+<title>Statistical Graphics and Communication – Fall 2019</title>
+
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Statistical Graphics and Communication –
+Fall 2019</h1>
+<h4 class="author">Stefany Coxe</h4>
+
+</div>
+
+
+<div
+id="links-to-html-lecture-notes-and-r-markdown-lab-files-for-each-week-are-below"
+class="section level3">
+<h3>Links to HTML lecture notes and R markdown lab files for each week
+are below</h3>
+<p>This is the <em>first version</em> of the course. Please excuse any
+typos or minor errors.</p>
+<p><img src="index_files/figure-html/plots-1.png" width="480" style="display: block; margin: auto;" /></p>
+<blockquote>
+<p>The greatest value of a picture is when it forces us to notice what
+we never expected to see. — John Tukey</p>
+</blockquote>
+<table>
+<colgroup>
+<col width="10%" />
+<col width="32%" />
+<col width="30%" />
+<col width="28%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Week</th>
+<th align="left">Topic</th>
+<th align="left">Lecture notes</th>
+<th align="left">Lab materials</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">Introduction</td>
+<td align="left"><a href="Graphics1_2019.html">Lecture 1</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%201.Rmd">Lab
+1</a></td>
+</tr>
+<tr class="even">
+<td align="left">2</td>
+<td align="left">ggplot intro</td>
+<td align="left"><a href="Graphics2_2019.html">Lecture 2</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%202.Rmd">Lab
+2</a></td>
+</tr>
+<tr class="odd">
+<td align="left">3</td>
+<td align="left">Perception</td>
+<td align="left"><a href="Graphics3_2019.html">Lecture 3</a></td>
+<td align="left">No Lab 3</td>
+</tr>
+<tr class="even">
+<td align="left">4</td>
+<td align="left">All the plots!</td>
+<td align="left"><a href="Graphics4_2019.html">Lecture 4</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%204.Rmd">Lab
+4</a></td>
+</tr>
+<tr class="odd">
+<td align="left">5</td>
+<td align="left">Themes, colors, etc.</td>
+<td align="left"><a href="Graphics5_2019.html">Lecture 5</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%205.Rmd">Lab
+5</a></td>
+</tr>
+<tr class="even">
+<td align="left">6</td>
+<td align="left">Exploratory data analysis</td>
+<td align="left"><a href="Graphics6_2019.html">Lecture 6</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%206.Rmd">Lab
+6</a></td>
+</tr>
+<tr class="odd">
+<td align="left">7</td>
+<td align="left">Visual inference</td>
+<td align="left"><a href="Graphics7_2019.html">Lecture 7</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%207.Rmd">Lab
+7</a></td>
+</tr>
+<tr class="even">
+<td align="left">8</td>
+<td align="left">Communication</td>
+<td align="left"><a href="Graphics8_2019.html">Lecture 8</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%208.Rmd">Lab
+8</a></td>
+</tr>
+<tr class="odd">
+<td align="left">9</td>
+<td align="left">Model-based graphics</td>
+<td align="left"><a href="Graphics9_2019.html">Lecture 9</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%209.Rmd">Lab
+9</a></td>
+</tr>
+<tr class="even">
+<td align="left">10</td>
+<td align="left">Model-based graphics</td>
+<td align="left"><a href="Graphics10_2019.html">Lecture 10</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%2010.Rmd">Lab
+10</a></td>
+</tr>
+<tr class="odd">
+<td align="left">11</td>
+<td align="left">Interactivity</td>
+<td align="left"><a href="Graphics11_2019.html">Lecture 11</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%2011.Rmd">Lab
+11</a></td>
+</tr>
+<tr class="even">
+<td align="left">12</td>
+<td align="left">Animation</td>
+<td align="left"><a href="Graphics12_2019.html">Lecture 12</a></td>
+<td align="left"><a
+href="https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics%20Lab%2012.Rmd">Lab
+12</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
