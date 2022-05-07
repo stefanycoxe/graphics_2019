@@ -22,10 +22,10 @@ x <- rnorm(100, 0, 1)
 y <- rnorm(100, (0.2 + 0.8*x + 0.3*x*x), 1)
 flyerdata <- data.frame(x, y)
 
-ggplot(data = flyerdata, aes(x = x, y = y)) + 
-  geom_point(color='black') +
-  geom_smooth(method = "loess", se = TRUE, linetype = "dashed")+ 
-  xlab("Predictor (X)") + ylab("Outcome (Y)")
+#ggplot(data = flyerdata, aes(x = x, y = y)) + 
+#  geom_point(color='black') +
+#  geom_smooth(method = "loess", se = TRUE, linetype = "dashed")+ 
+#  xlab("Predictor (X)") + ylab("Outcome (Y)")
 ```
 
 > The greatest value of a picture is when it forces us to notice what we never expected to see. — John Tukey
