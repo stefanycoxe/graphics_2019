@@ -1,0 +1,46 @@
+---
+title: "Statistical Graphics and Communication -- Fall 2019"
+author: Stefany Coxe
+output:
+  html_document: default
+---
+
+### Links to HTML lecture notes and R markdown lab files for each week are below
+
+This is the *first version* of the course. Please excuse any typos or minor errors.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+theme_set(theme_classic(base_size = 20))
+set.seed(31779)
+```
+
+
+```{r plots, echo = FALSE, warning = FALSE, message= FALSE, fig.align='center', fig.height = 3.5, fig.width = 5}
+x <- rnorm(100, 0, 1)
+y <- rnorm(100, (0.2 + 0.8*x + 0.3*x*x), 1)
+flyerdata <- data.frame(x, y)
+
+ggplot(data = flyerdata, aes(x = x, y = y)) + 
+  geom_point(color='black') +
+  geom_smooth(method = "loess", se = TRUE, linetype = "dashed")+ 
+  xlab("Predictor (X)") + ylab("Outcome (Y)")
+```
+
+> The greatest value of a picture is when it forces us to notice what we never expected to see. — John Tukey
+
+Week | Topic          | Lecture notes | Lab materials
+:----|:---------------|:--------------|:-------------
+1    | Introduction | [Lecture 1](Graphics1_2019.html) | [Lab 1](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 1.Rmd)
+2    | ggplot intro | [Lecture 2](Graphics2_2019.html) | [Lab 2](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 2.Rmd)
+3    | Perception | [Lecture 3](Graphics3_2019.html) | No Lab 3
+4    | All the plots! | [Lecture 4](Graphics4_2019.html) | [Lab 4](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 4.Rmd)
+5    | Themes, colors, etc. | [Lecture 5](Graphics5_2019.html) | [Lab 5](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 5.Rmd)
+6    | Exploratory data analysis | [Lecture 6](Graphics6_2019.html) | [Lab 6](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 6.Rmd)
+7    | Visual inference | [Lecture 7](Graphics7_2019.html) | [Lab 7](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 7.Rmd)
+8    | Communication | [Lecture 8](Graphics8_2019.html) | [Lab 8](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 8.Rmd)
+9    | Model-based graphics | [Lecture 9](Graphics9_2019.html) | [Lab 9](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 9.Rmd)
+10   | Model-based graphics | [Lecture 10](Graphics10_2019.html) | [Lab 10](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 10.Rmd)
+11   | Interactivity | [Lecture 11](Graphics11_2019.html) | [Lab 11](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 11.Rmd)
+12   | Animation | [Lecture 12](Graphics12_2019.html) | [Lab 12](https://github.com/stefanycoxe/graphics_2019/raw/main/Graphics Lab 12.Rmd)
